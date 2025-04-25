@@ -8,7 +8,6 @@ public class Gamestate {
         this.amount = 0;
         this.clickPWR = 1;
         
-
     }
 
     public void tick(double s){
@@ -21,6 +20,10 @@ public class Gamestate {
 
     public void Click(){
         amount += clickPWR;
+    }
+
+    public void receive(double a){
+        CPStotal += a;
     }
 
     public double GetCPS(){
