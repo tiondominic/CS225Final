@@ -4,6 +4,7 @@ public class upgrade {
     private int owned;
     private double baseCPS;
     private double multiplier;
+    private double clickPWR;
 
     public upgrade(String name, double baseCost, double baseCPS){
         this.name = name;
@@ -17,4 +18,5 @@ public class upgrade {
         owned++;
         baseCost = baseCost*multiplier;
     }
+
 }

@@ -2,23 +2,14 @@ import javax.swing.Timer;
 
 public class Main {
     public static void main(String[] args) {
-        Gamestate gamestate = new Gamestate(10.0); // 10 cookies per second
-        GameTick gameTick = new GameTick(gamestate); // updates 60 times/second
+        Gamestate gamestate = new Gamestate(1); 
+        GameTick gameTick = new GameTick(gamestate); 
+        Window mainwindow = new Window(gamestate); // Problem don't know how to fix
 
-        // Timer to print cookie amount every 1 second
-        Timer printTimer = new Timer(1000, e -> {
-            System.out.printf("Cookies: %.0f%n", gamestate.getAmount());
-        });
-        printTimer.start();
-
+        new Timer(16, e -> {
+            mainwindow.update(gamestate.getAmount());
+        }).start();
         
-        try {
-            Thread.sleep(11000);  
-        } catch (InterruptedException ignored) {}
-
         
-        gameTick.stop();
-        printTimer.stop();
-        System.out.println("Game stopped after 10 seconds.");
     }
 }
