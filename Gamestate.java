@@ -29,4 +29,8 @@ public class Gamestate {
     public double GetCPS(){
         return CPStotal;
     }
+
+    public void boughtUpgrade(double a){
+        amount -= a;
+    }
 }   

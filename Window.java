@@ -15,9 +15,9 @@ public class Window {
         this.gamestate = gamestate;
         this.UpgradeCount = 10;
 
-        frame = new JFrame("Cookie Realm");
+        frame = new JFrame("Cookie Realm"); // organize later
         frame.setLayout(new BorderLayout());
-        frame.setMinimumSize(new Dimension(500, 500));
+        frame.setMinimumSize(new Dimension(500, 700));
         counter = new JLabel("Cookies: 0");
         maingrid = new GridLayout(3, 3);
         GridLayout UpgradeGrid = new GridLayout(UpgradeCount, 1);
@@ -43,7 +43,7 @@ public class Window {
 
         Cookie.addActionListener(e -> {gamestate.Click();});
 
-        panel2.add(counter, BorderLayout.NORTH);
+        frame.add(counter, BorderLayout.NORTH);
         panel2.add(gridPanel, BorderLayout.CENTER);
 
         frame.add(panel2);
@@ -63,8 +63,17 @@ public class Window {
 
     public void addUpgrade(Upgrade upgrade){
         String name = upgrade.getName();
-        JButton upgradeButton = new JButton(name);
-        upgradeButton.addActionListener(e -> {upgrade.buy();});
+        
+        JButton upgradeButton = new JButton("<html>" + name + "<br>Owned: " + upgrade.getOwned() +  "<br>Cost: " + upgrade.getCost() + "</html>");
+        upgradeButton.setPreferredSize(new Dimension(100, 200));
+        upgradeButton.addActionListener(e -> {
+            if (gamestate.getAmount() >= upgrade.getCost()){
+                upgrade.buy(); 
+                upgradeButton.setText("<html>" + name + "<br>Owned: " + upgrade.getOwned() +  "<br>Cost: " + String.format("%.2f", upgrade.getCost()) + "</html>");
+                gamestate.boughtUpgrade(upgrade.getCost());
+            }
+        });
+
         upgradePanel.add(upgradeButton);
 
     }

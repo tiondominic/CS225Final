@@ -19,16 +19,19 @@ public class Upgrade {
     public void buy(){
         owned++;
         baseCost = baseCost*multiplier;
-        gamestate.receive(baseCPS*owned);
+        gamestate.receive(baseCPS);
     }
-
-    // public void updateCPS(){
-    //     gamestate.receive(baseCPS*owned); // potential problem where cps is updated by how many buy upgrade -> 
-    //                                       // cps now 5 -> buy new upgrade basecps is 10 -> cps is now 15 expected 1
-    // }
 
     public String getName(){
         return name;
+    }
+
+    public int getOwned(){
+        return owned;
+    }
+
+    public double getCost(){
+        return baseCost;
     }
 
 }
