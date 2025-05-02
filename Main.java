@@ -15,10 +15,9 @@ public class Main {
         mainwindow.addUpgrade(test3);
         mainwindow.addUpgrade(test4);
 
+
         new Timer(16, e -> {
             mainwindow.update(gamestate.getAmount());
         }).start();
-        
-        
     }
 }

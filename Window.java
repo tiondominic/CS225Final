@@ -2,14 +2,13 @@ import java.awt.*;
 import javax.swing.*;
 
 public class Window {
-    private JFrame frame;
-    private JLabel counter;
-    private GridLayout maingrid;
-    private Gamestate gamestate;
-    private JButton Cookie;
-    private Upgrade upgrade;
-    private int UpgradeCount;
-    private JPanel upgradePanel;
+    private final JFrame frame;
+    private final JLabel counter;
+    private final GridLayout maingrid;
+    private final Gamestate gamestate;
+    private final JButton Cookie;
+    private final int UpgradeCount;
+    private final JPanel upgradePanel;
 
     public Window(Gamestate gamestate){
         this.gamestate = gamestate;
@@ -28,13 +27,16 @@ public class Window {
         JPanel gridPanel = new JPanel(maingrid);
         upgradePanel = new JPanel(UpgradeGrid);
         Cookie = new JButton("CLICK");
-        Cookie.setPreferredSize(new Dimension(50, 50));
+
+        JPanel nullPanel = new JPanel(null);
+        Cookie.setBounds(0, 0, 150, 150);
+        nullPanel.add(Cookie);
 
         gridPanel.add(new JLabel()); // change this soon
         gridPanel.add(new JLabel());
         gridPanel.add(new JLabel());
         gridPanel.add(new JLabel());
-        gridPanel.add(Cookie);
+        gridPanel.add(nullPanel); //
         gridPanel.add(new JLabel());
         gridPanel.add(new JLabel());
         gridPanel.add(new JLabel());
@@ -67,10 +69,9 @@ public class Window {
         JButton upgradeButton = new JButton("<html>" + name + "<br>Owned: " + upgrade.getOwned() +  "<br>Cost: " + upgrade.getCost() + "</html>");
         upgradeButton.setPreferredSize(new Dimension(100, 200));
         upgradeButton.addActionListener(e -> {
-            if (gamestate.getAmount() >= upgrade.getCost()){
-                upgrade.buy(); 
-                upgradeButton.setText("<html>" + name + "<br>Owned: " + upgrade.getOwned() +  "<br>Cost: " + String.format("%.2f", upgrade.getCost()) + "</html>");
-                gamestate.boughtUpgrade(upgrade.getCost());
+            if (gamestate.tryBuyUpgrade(upgrade)) {
+                upgradeButton.setText("<html>" + name + "<br>Owned: " + upgrade.getOwned() +
+                    "<br>Cost: " + String.format("%.2f", upgrade.getCost()) + "</html>");
             }
         });
 

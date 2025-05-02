@@ -1,6 +1,6 @@
 public class Gamestate {
     private double CPStotal;
-    private double clickPWR;
+    private final double clickPWR;
     public double amount;
     
     public Gamestate(double CPS){
@@ -32,5 +32,15 @@ public class Gamestate {
 
     public void boughtUpgrade(double a){
         amount -= a;
+    }
+
+    public boolean tryBuyUpgrade(Upgrade upgrade) {
+        double cost = upgrade.getCost();
+        if (amount >= cost) {
+            amount -= cost;
+            upgrade.buy();
+            return true;
+        }
+        return false;
     }
 }   

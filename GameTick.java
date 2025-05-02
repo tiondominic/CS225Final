@@ -1,23 +1,25 @@
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import javax.swing.Timer;
 
-
 public class GameTick {
-    private Timer timer;
+    private final Timer timer;
+    private long lastTime;
 
-    public GameTick(Gamestate gamestate){
-        
-        timer = new Timer(16, new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-            gamestate.tick(0.03); 
-            }
+    public GameTick(Gamestate gamestate) {
+        lastTime = System.nanoTime();
+
+        timer = new Timer(16, (ActionEvent e) -> {
+            long now = System.nanoTime();
+            double deltaTime = (now - lastTime) / 1_000_000_000.0; 
+            lastTime = now;
+
+            gamestate.tick(deltaTime); 
         });
+
         timer.start();
     }
-    
-    public void stop(){
+
+    public void stop() {
         timer.stop();
     }
 }

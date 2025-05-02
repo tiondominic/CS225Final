@@ -1,11 +1,10 @@
 public class Upgrade {
-    private String name;
+    private final String name;
     private double baseCost;
     private int owned;
-    private double baseCPS;
-    private double multiplier;
-    private double clickPWR;
-    private Gamestate gamestate;
+    private final double baseCPS;
+    private final double multiplier;
+    private final Gamestate gamestate;
 
     public Upgrade(String name, double baseCost, double baseCPS, Gamestate gamestate){
         this.gamestate = gamestate;
