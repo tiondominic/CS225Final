@@ -15,29 +15,33 @@ public class Window {
 
         Dimension size = new Dimension(800, 700);
 
+        // === MAINFRAME ===
         frame = new JFrame("Cookie Realm"); // organize later
         frame.setLayout(new BorderLayout());
         frame.setMinimumSize(size);
         frame.setMaximumSize(size);
-        counter = new JLabel("Cookies: 0");
+        // =================
+
+        
         GridLayout UpgradeGrid = new GridLayout(UpgradeCount, 1);
-
-        frame.add(new JLabel("Placeholder 1"), BorderLayout.WEST);
-
-        JPanel panel2 = new JPanel(new BorderLayout());
+        counter = new JLabel("Cookies: 0");
         upgradePanel = new JPanel(UpgradeGrid);
 
-        Cookie = new JButton(new ImageIcon("assets/cookie.png"));
 
+        JPanel panel2 = new JPanel(new BorderLayout());
+        
+        
+
+        Cookie = new JButton(new ImageIcon("assets/cookie.png"));
         Cookie.addActionListener(e -> {gamestate.Click();});
 
-        frame.add(counter, BorderLayout.NORTH);
+        
         panel2.add(Cookie, BorderLayout.CENTER);
 
-        frame.add(panel2);
-
-
-        frame.add(new JLabel("Placeholder 1"), BorderLayout.SOUTH);
+        frame.add(counter, BorderLayout.NORTH);
+        frame.add(panel2, BorderLayout.CENTER);
+        frame.add(new JLabel("Placeholder 1"), BorderLayout.WEST);
+        frame.add(new JLabel("Inspired By Orteil's Cookie Clicker"), BorderLayout.SOUTH);
         frame.add(upgradePanel, BorderLayout.EAST);
 
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
