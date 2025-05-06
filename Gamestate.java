@@ -1,6 +1,6 @@
 public class Gamestate {
     private double CPStotal;
-    private final double clickPWR;
+    private double clickPWR;
     public double amount;
     
     public Gamestate(double CPS){
@@ -8,6 +8,10 @@ public class Gamestate {
         this.amount = 0;
         this.clickPWR = 1;
         
+    }
+
+    public void upgradeClick(double a){
+        clickPWR += a;
     }
 
     public void tick(double s){

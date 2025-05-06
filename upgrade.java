@@ -5,20 +5,28 @@ public class Upgrade {
     private final double baseCPS;
     private final double multiplier;
     private final Gamestate gamestate;
+    private final boolean CursorUpgrade;
 
-    public Upgrade(String name, double baseCost, double baseCPS, Gamestate gamestate){
+    public Upgrade(String name, double baseCost, double baseCPS, Gamestate gamestate, boolean CursorUpgrade){
         this.gamestate = gamestate;
         this.name = name;
         this.baseCost = baseCost;
         this.baseCPS = baseCPS;
         this.multiplier = 1.15;
         this.owned = 0;
+        this.CursorUpgrade = CursorUpgrade;
     }   
 
     public void buy(){
         owned++;
         baseCost = baseCost*multiplier;
-        gamestate.receive(baseCPS);
+        
+        if(CursorUpgrade){
+            gamestate.upgradeClick(baseCPS);
+        }
+        else{
+            gamestate.receive(baseCPS);
+        }
     }
 
     public String getName(){

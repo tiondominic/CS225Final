@@ -4,7 +4,6 @@ import javax.swing.*;
 public class Window {
     private final JFrame frame;
     private final JLabel counter;
-    private final GridLayout maingrid;
     private final Gamestate gamestate;
     private final JButton Cookie;
     private final int UpgradeCount;
@@ -14,39 +13,26 @@ public class Window {
         this.gamestate = gamestate;
         this.UpgradeCount = 10;
 
+        Dimension size = new Dimension(800, 700);
+
         frame = new JFrame("Cookie Realm"); // organize later
         frame.setLayout(new BorderLayout());
-        frame.setMinimumSize(new Dimension(500, 700));
+        frame.setMinimumSize(size);
+        frame.setMaximumSize(size);
         counter = new JLabel("Cookies: 0");
-        maingrid = new GridLayout(3, 3);
         GridLayout UpgradeGrid = new GridLayout(UpgradeCount, 1);
 
         frame.add(new JLabel("Placeholder 1"), BorderLayout.WEST);
 
         JPanel panel2 = new JPanel(new BorderLayout());
-        JPanel gridPanel = new JPanel(maingrid);
         upgradePanel = new JPanel(UpgradeGrid);
-        Cookie = new JButton("CLICK");
 
-        JPanel nullPanel = new JPanel(null);
-        Cookie.setBounds(0, 0, 150, 150);
-        nullPanel.add(Cookie);
-
-        gridPanel.add(new JLabel()); // change this soon
-        gridPanel.add(new JLabel());
-        gridPanel.add(new JLabel());
-        gridPanel.add(new JLabel());
-        gridPanel.add(nullPanel); //
-        gridPanel.add(new JLabel());
-        gridPanel.add(new JLabel());
-        gridPanel.add(new JLabel());
-        gridPanel.add(new JLabel());
-        
+        Cookie = new JButton(new ImageIcon("assets/cookie.png"));
 
         Cookie.addActionListener(e -> {gamestate.Click();});
 
         frame.add(counter, BorderLayout.NORTH);
-        panel2.add(gridPanel, BorderLayout.CENTER);
+        panel2.add(Cookie, BorderLayout.CENTER);
 
         frame.add(panel2);
 
