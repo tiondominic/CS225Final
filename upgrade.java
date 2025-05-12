@@ -16,6 +16,7 @@ public class Upgrade {
         this.owned = 0;
         this.CursorUpgrade = CursorUpgrade;
     }   
+    
 
     public void buy(){
         owned++;

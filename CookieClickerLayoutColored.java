@@ -1,9 +1,9 @@
-import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
+import javax.swing.*;
 
 class ImageButton extends JButton {
     private final Image image;
@@ -121,6 +121,7 @@ public class CookieClickerLayoutColored extends JFrame {
     // Example dynamic row counts
     private int purchasedUpgrades = 10;
     private int availableUpgrades = 5;
+    private Gamestate gamestate;
 
     List<JButton> upgradeButtons = new ArrayList<>();
     List<JButton> toolButtons = new ArrayList<>();
@@ -137,7 +138,8 @@ public class CookieClickerLayoutColored extends JFrame {
     List<JPanel> secondRowPanels = new ArrayList<>();
 
     
-    public CookieClickerLayoutColored() {
+    public CookieClickerLayoutColored(Gamestate gamestate) {
+        this.gamestate = gamestate;
         setTitle("Cookie Clicker Layout - Colored");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
@@ -608,8 +610,6 @@ public class CookieClickerLayoutColored extends JFrame {
         setVisible(true);
     }
 
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(CookieClickerLayoutColored::new);
-    }
+
 }
 
