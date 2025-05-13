@@ -1,6 +1,6 @@
 public class Main {
     public static void main(String[] args) {
-        Gamestate gamestate = new Gamestate(10); 
+        Gamestate gamestate = new Gamestate(1000000); 
         GameTick gameTick = new GameTick(gamestate);
         
         CookieClickerLayoutColored mainwindow = new CookieClickerLayoutColored(gamestate);

@@ -100,11 +100,11 @@ class ImageBackgroundPanel extends JPanel {
             int panelWidth = getWidth();
             int panelHeight = getHeight();
 
-            int imgWidth = backgroundImage.getWidth(this);
-            int imgHeight = backgroundImage.getHeight(this);
+            int imgWidth = backgroundImage.getWidth(null);
+            int imgHeight = backgroundImage.getHeight(null);
 
-            if (imgWidth > 0 && imgHeight > 0) {
-                // Scale to cover entire panel (may crop image)
+            if (imgWidth > 0 && imgHeight > 0 && panelWidth > 0 && panelHeight > 0) {
+                // Scale image to fill panel while preserving aspect ratio
                 double scale = Math.max((double) panelWidth / imgWidth, (double) panelHeight / imgHeight);
                 int newWidth = (int) (imgWidth * scale);
                 int newHeight = (int) (imgHeight * scale);
@@ -210,7 +210,9 @@ public class CookieClickerLayoutColored extends JFrame {
     private Gamestate gamestate;
     private List<Upgrade> upgrades = new ArrayList<>();
     private Timer uiUpdateTimer;
-    private DecimalFormat formatter = new DecimalFormat("#,###.0");
+    private DecimalFormat formatter1 = new DecimalFormat("#,###.0");
+    private DecimalFormat formatter2 = new DecimalFormat("#,###.00");
+    private DecimalFormat formatter3 = new DecimalFormat("#,###.000");
     private JLabel cookieCountLabel;
     private JLabel cookieUnitLabel;
     private JLabel cpsLabel;
@@ -379,71 +381,83 @@ public class CookieClickerLayoutColored extends JFrame {
         rowACenter.setBackground(new Color(0xDBD221));
         centerRows.add(rowACenter);
 
-        // Column 1 (2 Buttons)
-        JPanel column1A = new JPanel(new GridLayout(2, 1));  // 2 rows in this column
+        // === Column 1 (2 Buttons) ===
+        JPanel column1A = new JPanel();
+        column1A.setLayout(new BoxLayout(column1A, BoxLayout.Y_AXIS));
         column1A.setBackground(new Color(0xA7EAA7));
-        rowACenterColumnA.add(column1A);
+        rowACenter.add(column1A);
 
-        // === Button 1 ===
+        // Button 1
         JButton column1AButton1 = new JButton("Options");
         column1AButton1.setBackground(new Color(0xEAE77D));
-        // Add individual action listener
-        column1AButton1.addActionListener(e -> {
-            // Your custom logic for button 1
-            System.out.println("Button 1 clicked");
-        });
+        column1AButton1.addActionListener(e -> System.out.println("Button 1 clicked"));
         firstRowButtons.add(column1AButton1);
-        column1A.add(column1AButton1);
 
-        // === Button 2 ===
+        JPanel button1Wrapper = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
+        button1Wrapper.setOpaque(false);
+        button1Wrapper.add(column1AButton1);
+        column1A.add(button1Wrapper);
+
+        // Spacer
+        column1A.add(Box.createVerticalStrut(5));
+
+        // Button 2
         JButton column1AButton2 = new JButton("Stats");
         column1AButton2.setBackground(new Color(0xEAE77D));
-        // Add individual action listener
-        column1AButton2.addActionListener(e -> {
-            // Your custom logic for button 2
-            System.out.println("Button 2 clicked");
-        });
+        column1AButton2.addActionListener(e -> System.out.println("Button 2 clicked"));
         firstRowButtons.add(column1AButton2);
-        column1A.add(column1AButton2);
 
-        // Column 2 (1 Label or Text)
+        JPanel button2Wrapper = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
+        button2Wrapper.setOpaque(false);
+        button2Wrapper.add(column1AButton2);
+        column1A.add(button2Wrapper);
+
+        // === Column 2 (Middle Label) ===
         JPanel column2A = new JPanel(new GridBagLayout());
         column2A.setBackground(new Color(0xA53A3A));
-        rowACenterColumnB.add(column2A);
+        rowACenter.add(column2A);
+
         JLabel middleLabel = new JLabel("COOKIE REALMS");
         middleLabel.setForeground(Color.BLACK);
-        column2A.add(middleLabel);
+        middleLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
-        // Column 1 (2 Buttons)
-        JPanel column3A = new JPanel(new GridLayout(2, 1));  // 2 rows in this column
+        JPanel labelWrapper = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
+        labelWrapper.setOpaque(false);
+        labelWrapper.add(middleLabel);
+        column2A.add(labelWrapper);
+
+        // === Column 3 (2 Buttons) ===
+        JPanel column3A = new JPanel();
+        column3A.setLayout(new BoxLayout(column3A, BoxLayout.Y_AXIS));
         column3A.setBackground(new Color(0xA7EAA7));
-        rowACenterColumnA.add(column3A);
+        rowACenter.add(column3A);
 
-        // === Button 1 ===
+        // Button 3
         JButton column3AButton1 = new JButton("Info");
         column3AButton1.setBackground(new Color(0xEAE77D));
-        // Add individual action listener
-        column3AButton1.addActionListener(e -> {
-            // Your custom logic for button 1
-            System.out.println("Button 1 clicked");
-        });
+        column3AButton1.addActionListener(e -> System.out.println("Button 3 clicked"));
         firstRowButtons.add(column3AButton1);
-        column3A.add(column3AButton1);
 
-        // === Button 2 ===
+        JPanel button3Wrapper = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
+        button3Wrapper.setOpaque(false);
+        button3Wrapper.add(column3AButton1);
+        column3A.add(button3Wrapper);
+
+        // Spacer
+        column3A.add(Box.createVerticalStrut(5));
+
+        // Button 4
         JButton column3AButton2 = new JButton("Help");
         column3AButton2.setBackground(new Color(0xEAE77D));
-        // Add individual action listener
-        column3AButton2.addActionListener(e -> {
-            // Your custom logic for button 2
-            System.out.println("Button 2 clicked");
-        });
+        column3AButton2.addActionListener(e -> System.out.println("Button 4 clicked"));
         firstRowButtons.add(column3AButton2);
-        column3A.add(column3AButton2);
 
-        rowACenter.add(column1A);
-        rowACenter.add(column2A);
-        rowACenter.add(column3A);
+        JPanel button4Wrapper = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
+        button4Wrapper.setOpaque(false);
+        button4Wrapper.add(column3AButton2);
+        column3A.add(button4Wrapper);
+
+        // Add to center panel
         centerPanel.add(rowACenter);
 
         // === 2nd Row (Content) ===
@@ -485,45 +499,50 @@ public class CookieClickerLayoutColored extends JFrame {
             int clickY = screenPoint.y - framePoint.y;
 
             // Show floating text
-            showFloatingText(clickX, clickY, "+" + formatter.format(gamestate.getClickingPower()));
+            showFloatingText(clickX, clickY, "+" + formatter1.format(gamestate.getClickingPower()));
         });
 
         row2B.add(actionButtonrow2B);
         rowBCenter.add(row2B);
         secondRowPanels.add(row2B);
 
-        // Row 3 (Text or Label - Cookie Count)
-        JPanel row3B = new JPanel(new GridBagLayout()); // Instead of default FlowLayout
-        // FIX: Make the panel fully opaque to fix the glitching issue
-        row3B.setBackground(new Color(0, 0, 0, 255)); 
-        row3B.setOpaque(true);
+        Image row3BImage = new ImageIcon("assets/center_row2_rowC.png").getImage();  // Load your background image
+        JPanel row3B = new ImageBackgroundPanel(row3BImage);  // Use the custom panel
+        row3B.setLayout(new GridBagLayout());  // ← Center contents
+        row3B.setBackground(new Color(0xE59C9C));
+        row3B.setAlignmentX(Component.CENTER_ALIGNMENT);
+        row3B.setOpaque(false);
 
         cookieCountLabel = new JLabel("0.0");
         row3B.add(cookieCountLabel);
         rowBCenter.add(row3B);
         secondRowPanels.add(row3B);
 
-        // Row 4 (Text or Label - Cookie Unit)
-        JPanel row4B = new JPanel(new GridBagLayout()); // Instead of default FlowLayout
-        row4B.setBackground(new Color(0, 0, 0, 255)); // Make fully opaque
-        row4B.setOpaque(true);
+        Image row4BImage = new ImageIcon("assets/center_row2_rowD.png").getImage();  // Load your background image
+        JPanel row4B = new ImageBackgroundPanel(row4BImage);  // Use the custom panel
+        row4B.setLayout(new GridBagLayout());  // ← Center contents
+        row4B.setBackground(new Color(0xE59C9C));
+        row4B.setAlignmentX(Component.CENTER_ALIGNMENT);
+        row4B.setOpaque(false);
 
         cookieUnitLabel = new JLabel("Cookies");
         row4B.add(cookieUnitLabel);
         rowBCenter.add(row4B);
         secondRowPanels.add(row4B);
 
-        // Row 5 (Text or Label - CPS)
-        JPanel row5B = new JPanel(new GridBagLayout()); // Instead of default FlowLayout
-        row5B.setBackground(new Color(0, 0, 0, 255)); // Make fully opaque
-        row5B.setOpaque(true);
+        Image row5BImage = new ImageIcon("assets/center_row2_rowE.png").getImage();  // Load your background image
+        JPanel row5B = new ImageBackgroundPanel(row5BImage);  // Use the custom panel
+        row5B.setLayout(new GridBagLayout());  // ← Center contents
+        row5B.setBackground(new Color(0xE59C9C));
+        row5B.setAlignmentX(Component.CENTER_ALIGNMENT);
+        row5B.setOpaque(false);
         
         cpsLabel = new JLabel("0.0 per second");
         row5B.add(cpsLabel);
         rowBCenter.add(row5B);
         secondRowPanels.add(row5B);
 
-        int verticalPadding2 = (int) (screenSize.height * 0.1125);
+        int verticalPadding2 = (int) (screenSize.height * 0.075);
         rowBCenter.add(Box.createVerticalStrut(verticalPadding2));  // Bottom margin
 
         // Add secondRow to centerPanel
@@ -534,107 +553,110 @@ public class CookieClickerLayoutColored extends JFrame {
 
         // === SEPARATE RESIZE LISTENER FOR CENTER PANEL ===
         centerPanel.addComponentListener(new ComponentAdapter() {
-            @Override
-            public void componentResized(ComponentEvent e) {
-                int frameWidth = getWidth();
-                int frameHeight = getHeight();
-                
-                // CENTER PANEL CALCULATIONS
-                int centerPanelWidth = (int) (frameWidth * 0.5);  // 75% width (assuming east is 25%)
+        @Override
+        public void componentResized(ComponentEvent e) {
+            int frameWidth = getWidth();
+            int frameHeight = getHeight();
 
-                int rowAHeight = (int) (frameHeight * 0.15);  // 75% width (assuming east is 25%)
-                int rowBHeight = (int) (frameHeight * 0.85);  // 75% width (assuming east is 25%)
+            // === CENTER PANEL SIZE ===
+            int centerPanelWidth = (int) (frameWidth * 0.5); // 50% width
+            centerPanel.setPreferredSize(new Dimension(centerPanelWidth, frameHeight));
 
-                // Set panel & row sizes
-                centerPanel.setPreferredSize(new Dimension(centerPanelWidth, frameHeight));
+            // === Row A ===
+            int rowAHeight = (int) (frameHeight * 0.15);
+            rowACenter.setPreferredSize(new Dimension(centerPanelWidth, rowAHeight));
+            rowACenter.setMinimumSize(rowACenter.getPreferredSize());
 
-                rowACenter.setPreferredSize(new Dimension(centerPanelWidth, rowAHeight));
-                rowBCenter.setPreferredSize(new Dimension(centerPanelWidth, rowBHeight));
-    
-                rowACenter.setMinimumSize(new Dimension(centerPanelWidth, rowAHeight));
+            // === Row B ===
+            int rowBHeight = (int) (frameHeight * 0.85);
+            rowBCenter.setPreferredSize(new Dimension(centerPanelWidth, rowBHeight));
+            rowBCenter.setMinimumSize(rowBCenter.getPreferredSize());
 
-                rowBCenter.setMinimumSize(new Dimension(centerPanelWidth, rowBHeight));
-                
-                int rowAColumnAWidth = (int) (centerPanelWidth * 0.16875);
-                int rowAColumnBWidth = (int) (centerPanelWidth * 0.6625);
-                column1A.setPreferredSize(new Dimension(rowAColumnAWidth, rowAHeight));
+            // === Row A Columns ===
+            int rowAColumnAWidth = (int) (centerPanelWidth * 0.16875);
+            int rowAColumnBWidth = (int) (centerPanelWidth * 0.6625);
 
-                column2A.setPreferredSize(new Dimension(rowAColumnBWidth, rowAHeight));
+            column1A.setPreferredSize(new Dimension(rowAColumnAWidth, rowAHeight));
+            column1A.setMinimumSize(column1A.getPreferredSize());
+            column1A.setMaximumSize(column1A.getPreferredSize());
 
-                column3A.setPreferredSize(new Dimension(rowAColumnAWidth, rowAHeight));
-                
-                // Row A buttons - each button gets appropriate size
-                int rowAButtonWidth = (int) (frameWidth * 0.16875);
-                int rowAButtonHeight = (int) (frameHeight * 0.075);
-                for (JButton btn : firstRowButtons) {
-                    btn.setPreferredSize(new Dimension(rowAButtonWidth, rowAButtonHeight));
-                    btn.setMaximumSize(new Dimension(rowAButtonWidth, rowAButtonHeight));
-                }
-                
-                // Customize each row in the second row section
-                int rowBrowAHeight = (int) (centerPanelWidth * 0.075);
-                int rowBrowBHeight = (int) (centerPanelWidth * 0.475);
-                int rowBrowCHeight = (int) (centerPanelWidth * 0.0375);
-                int rowBWidth = (int) (centerPanelWidth * 0.6625);
-                row1B.setPreferredSize(new Dimension(rowBWidth, rowBrowAHeight));
-                row1B.setMaximumSize(new Dimension(rowBWidth, rowBrowAHeight));
+            column2A.setPreferredSize(new Dimension(rowAColumnBWidth, rowAHeight));
+            column2A.setMinimumSize(column2A.getPreferredSize());
+            column2A.setMaximumSize(column2A.getPreferredSize());
 
-                row2B.setPreferredSize(new Dimension(rowBWidth, rowBrowBHeight));
-                row2B.setMaximumSize(new Dimension(rowBWidth, rowBrowBHeight));
+            column3A.setPreferredSize(new Dimension(rowAColumnAWidth, rowAHeight));
+            column3A.setMinimumSize(column3A.getPreferredSize());
+            column3A.setMaximumSize(column3A.getPreferredSize());
 
-                row3B.setPreferredSize(new Dimension(rowBWidth, rowBrowAHeight));
-                row3B.setMaximumSize(new Dimension(rowBWidth, rowBrowAHeight));
-
-                row4B.setPreferredSize(new Dimension(rowBWidth, rowBrowAHeight));
-                row4B.setMaximumSize(new Dimension(rowBWidth, rowBrowAHeight));
-
-                row5B.setPreferredSize(new Dimension(rowBWidth, rowBrowCHeight));
-                row5B.setMaximumSize(new Dimension(rowBWidth, rowBrowAHeight));
-                
-                // Action button in row2B
-                int row2BButtonWidth = (int) (rowBWidth * 0.9);
-                int row2BButtonHeight = (int) (rowBrowBHeight * 0.9);
-                actionButtonrow2B.setPreferredSize(new Dimension(row2BButtonWidth, row2BButtonHeight));
-
-                // Calculate font size based on frame height
-                int baseFontSize = (int) (frameHeight * 0.030);  // Adjust multiplier as needed
-                Font scaledFont1 = new Font("Garamond", Font.BOLD, baseFontSize);
-
-                // Set font color (foreground) for all firstRowButtons
-                for (JButton btn : firstRowButtons) {
-                    btn.setFont(scaledFont1);
-                    btn.setForeground(new Color(0, 0, 0));  // or any color you want
-                }
-
-                // Set font and color for the middle label
-                middleLabel.setFont(new Font("Garamond", Font.BOLD, (int) (frameHeight * 0.055)));
-                middleLabel.setForeground(new Color(255, 255, 255));  // or another color
-
-                Font scaledFont2 = new Font("Garamond", Font.BOLD, (int) (baseFontSize * 1.5));
-                Font scaledFont3 = new Font("Garamond", Font.BOLD, (int) (baseFontSize * 1.125));
-
-                // Set font for all labels
-                labelrow1B.setFont(scaledFont2);
-                cookieCountLabel.setFont(scaledFont2);
-                cookieUnitLabel.setFont(scaledFont2);
-                cpsLabel.setFont(scaledFont3);
-
-                // Set font color for all labels
-                Color fontColor = new Color(0xFFFFFF);  // Dark slate gray
-                labelrow1B.setForeground(fontColor);
-                cookieCountLabel.setForeground(fontColor);
-                cookieUnitLabel.setForeground(fontColor);
-                cpsLabel.setForeground(fontColor);
-
-                // Set font for the action button (if applicable)
-                actionButtonrow2B.setFont(scaledFont2);  // Adjust font size for button as well
-                actionButtonrow2B.setForeground(fontColor); // Apply same font color
-                
-                // Refresh center panel
-                centerPanel.revalidate();
-                centerPanel.repaint();
+            // === Row A Buttons ===
+            int rowAButtonWidth = rowAColumnAWidth;
+            int rowAButtonHeight = (int) (frameHeight * 0.075);
+            for (JButton btn : firstRowButtons) {
+                btn.setPreferredSize(new Dimension(rowAButtonWidth, rowAButtonHeight));
+                btn.setMaximumSize(new Dimension(rowAButtonWidth, rowAButtonHeight));
             }
-        });
+
+            // === Row B Panels ===
+            int rowBrowAHeight = (int) (frameHeight * 0.075);
+            int rowBrowBHeight = (int) (frameHeight * 0.5125);
+            int rowBrowCHeight = (int) (frameHeight * 0.0375);
+            int rowBWidth = (int) (centerPanelWidth * 0.6625);
+
+            row1B.setPreferredSize(new Dimension(rowBWidth, rowBrowAHeight));
+            row1B.setMaximumSize(row1B.getPreferredSize());
+
+            row2B.setPreferredSize(new Dimension(rowBWidth, rowBrowBHeight));
+            row2B.setMaximumSize(row2B.getPreferredSize());
+
+            row3B.setPreferredSize(new Dimension(rowBWidth, rowBrowAHeight));
+            row3B.setMaximumSize(row3B.getPreferredSize());
+
+            row4B.setPreferredSize(new Dimension(rowBWidth, rowBrowAHeight));
+            row4B.setMaximumSize(row4B.getPreferredSize());
+
+            row5B.setPreferredSize(new Dimension(rowBWidth, rowBrowCHeight));
+            row5B.setMaximumSize(row5B.getPreferredSize());
+
+            // === Action Button in Row 2 ===
+            int row2BButtonWidth = (int) (rowBWidth * 0.9);
+            int row2BButtonHeight = (int) (rowBrowBHeight * 0.9);
+            actionButtonrow2B.setPreferredSize(new Dimension(row2BButtonWidth, row2BButtonHeight));
+
+            // === Fonts ===
+            int baseFontSize = (int) (frameHeight * 0.030);
+            Font scaledFont1 = new Font("Garamond", Font.BOLD, baseFontSize);
+            Font scaledFont2 = new Font("Garamond", Font.BOLD, (int) (baseFontSize * 1.75));
+            Font scaledFont3 = new Font("Garamond", Font.BOLD, (int) (baseFontSize * 0.9));
+
+            for (JButton btn : firstRowButtons) {
+                btn.setFont(scaledFont1);
+                btn.setForeground(Color.BLACK);
+            }
+
+            middleLabel.setFont(new Font("Garamond", Font.BOLD, (int) (frameHeight * 0.055)));
+            middleLabel.setForeground(Color.WHITE);
+
+            Color fontColor = Color.WHITE;
+            Color fontColor2 = new Color(0x4c2308);
+
+            labelrow1B.setFont(scaledFont2);
+            cookieCountLabel.setFont(scaledFont2);
+            cookieUnitLabel.setFont(scaledFont2);
+            cpsLabel.setFont(scaledFont3);
+
+            labelrow1B.setForeground(fontColor);
+            cookieCountLabel.setForeground(fontColor2);
+            cookieUnitLabel.setForeground(fontColor2);
+            cpsLabel.setForeground(fontColor2);
+
+            actionButtonrow2B.setFont(scaledFont2);
+            actionButtonrow2B.setForeground(fontColor);
+
+            // Final repaint
+            centerPanel.revalidate();
+            centerPanel.repaint();
+        }
+    });
 
         // === EAST PANEL (RIGHT) ===
         JPanel eastPanel = new JPanel();
@@ -974,15 +996,15 @@ public class CookieClickerLayoutColored extends JFrame {
     // Helper method to format large numbers
     private String formatNumber(double number) {
         if (number < 100000) {
-            return formatter.format(number);
+            return formatter1.format(number);
         } else if (number < 1000000) {
-            return formatter.format(number / 1000);
+            return formatter2.format(number / 1000);
         } else if (number < 1000000000) {
-            return formatter.format(number / 1000000);
+            return formatter3.format(number / 1000000);
         } else if (number < 1000000000000L) {
-            return formatter.format(number / 1000000000);
+            return formatter3.format(number / 1000000000);
         } else {
-            return formatter.format(number / 1000000000000L);
+            return formatter3.format(number / 1000000000000L);
         }
     }
     
