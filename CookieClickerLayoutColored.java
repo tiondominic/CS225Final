@@ -3,7 +3,10 @@ import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Iterator;
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import java.text.DecimalFormat;
 
 class ImageButton extends JButton {
     private final Image image;
@@ -116,16 +119,121 @@ class ImageBackgroundPanel extends JPanel {
     }
 }
 
+// Custom panel for upgrade buttons with three-column layout
+class UpgradePanel extends JPanel {
+    private final JLabel imageLabel;
+    private final JLabel nameLabel;
+    private final JLabel costLabel;
+    private final JLabel ownedLabel;
+    private final Color RED_TEXT = new Color(0xFF0000);
+    private final Color GREEN_TEXT = new Color(0x00AA00);
+    private final Upgrade upgrade;
+    private final DecimalFormat formatter = new DecimalFormat("#,###.0");
+    
+    public UpgradePanel(Upgrade upgrade) {
+        this.upgrade = upgrade;
+        setLayout(new BorderLayout());
+        
+        // Create a panel with GridLayout for the three columns
+        JPanel contentPanel = new JPanel(new GridLayout(1, 3));
+        contentPanel.setOpaque(false);
+        
+        // Column 1: Image placeholder (20% width)
+        JPanel imagePanel = new JPanel(new BorderLayout());
+        imagePanel.setOpaque(false);
+        imageLabel = new JLabel("[IMG]");
+        imageLabel.setHorizontalAlignment(SwingConstants.LEFT);
+        imageLabel.setBorder(new EmptyBorder(5, 10, 5, 5));
+        imagePanel.add(imageLabel, BorderLayout.CENTER);
+        
+        // Column 2: Name and cost (50% width)
+        JPanel infoPanel = new JPanel(new GridLayout(2, 1));
+        infoPanel.setOpaque(false);
+        nameLabel = new JLabel(upgrade.getName());
+        nameLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        nameLabel.setFont(nameLabel.getFont().deriveFont(Font.BOLD, 14f));
+        
+        costLabel = new JLabel("Cost: " + formatter.format(upgrade.getCost()));
+        costLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        costLabel.setForeground(RED_TEXT);
+        
+        infoPanel.add(nameLabel);
+        infoPanel.add(costLabel);
+        
+        // Column 3: Owned count (30% width)
+        JPanel ownedPanel = new JPanel(new BorderLayout());
+        ownedPanel.setOpaque(false);
+        ownedLabel = new JLabel(String.valueOf(upgrade.getOwned()));
+        ownedLabel.setHorizontalAlignment(SwingConstants.RIGHT);
+        ownedLabel.setFont(ownedLabel.getFont().deriveFont(Font.BOLD, 18f));
+        ownedLabel.setBorder(new EmptyBorder(5, 5, 5, 10));
+        ownedPanel.add(ownedLabel, BorderLayout.CENTER);
+        
+        // Add the three columns to the content panel with appropriate weights
+        contentPanel.add(imagePanel);
+        contentPanel.add(infoPanel);
+        contentPanel.add(ownedPanel);
+        
+        // Add the content panel to this panel
+        add(contentPanel, BorderLayout.CENTER);
+        
+        // Set initial opacity
+        setOpaque(true);
+    }
+    
+    public void updateStage(int stage, double cookieCount) {
+        // Update owned count
+        ownedLabel.setText(String.valueOf(upgrade.getOwned()));
+        
+        // Update name based on stage
+        if (stage == 1) {
+            nameLabel.setText("???");
+        } else {
+            nameLabel.setText(upgrade.getName());
+        }
+        
+        // Update cost text and color
+        costLabel.setText("Cost: " + formatter.format(upgrade.getCost()));
+        if (stage == 3) {
+            costLabel.setForeground(GREEN_TEXT);
+        } else {
+            costLabel.setForeground(RED_TEXT);
+        }
+    }
+}
+
 public class CookieClickerLayoutColored extends JFrame {
 
     // Example dynamic row counts
     private int purchasedUpgrades = 10;
-    private int availableUpgrades = 5;
+    //private int availableUpgrades = 5;
     private Gamestate gamestate;
+    private List<Upgrade> upgrades = new ArrayList<>();
+    private Timer uiUpdateTimer;
+    private DecimalFormat formatter = new DecimalFormat("#,###.0");
+    private JLabel cookieCountLabel;
+    private JLabel cookieUnitLabel;
+    private JLabel cpsLabel;
+    private JPanel availablePanel;
+    private int upgradeBtnWidth;
+    private int upgradeBtnHeight;
+    private List<JPanel> upgradeWrappers = new ArrayList<>();
+    private List<UpgradePanel> upgradePanels = new ArrayList<>();
+    private int visibleUpgrades = 0;
+    private final List<FloatingLabel> floatingLabels = new ArrayList<>();
+
+    // Colors for upgrade stages
+    private final Color STAGE1_BG = new Color(0x333333); // Dark gray
+    private final Color STAGE2_BG = new Color(0x777777); // Lighter gray
+    private final Color STAGE3_BG = new Color(0xF7F4B7); // Original color
+    private final Color RED_TEXT = new Color(0xFF0000); // Red
+    private final Color GREEN_TEXT = new Color(0x00AA00); // Green
+    private final Color WHITE_TEXT = new Color(0xFFFFFF); // White
 
     List<JButton> upgradeButtons = new ArrayList<>();
     List<JButton> toolButtons = new ArrayList<>();
     List<JButton> genButtons = new ArrayList<>();
+    List<JLabel> genLabel = new ArrayList<>();
 
     List<JButton> topButtons = new ArrayList<>();
     List<JButton> bottomButtons = new ArrayList<>();
@@ -137,6 +245,8 @@ public class CookieClickerLayoutColored extends JFrame {
     List<JPanel> rowACenterColumnB = new ArrayList<>();
     List<JPanel> secondRowPanels = new ArrayList<>();
 
+    // Add a new list to track which upgrades have passed Stage 1
+    private List<Boolean> upgradePastStage1 = new ArrayList<>();
     
     public CookieClickerLayoutColored(Gamestate gamestate) {
         this.gamestate = gamestate;
@@ -149,6 +259,10 @@ public class CookieClickerLayoutColored extends JFrame {
         int height = (int) (screenSize.height * 0.8);
         setSize(width, height);
         setLocationRelativeTo(null); // Centers the window
+
+        // Calculate initial button sizes
+        upgradeBtnWidth = (int) (width * 0.25);
+        upgradeBtnHeight = (int) (height * 0.1);
 
         setLayout(new BorderLayout());
 
@@ -344,7 +458,7 @@ public class CookieClickerLayoutColored extends JFrame {
         row1B.setBackground(new Color(0, 0, 0, 64)); // 128 = 50% transparency
         row1B.setOpaque(true);
 
-        JLabel labelrow1B = new JLabel("Grandma Slavery" + "'s" + " " + "Bakery"); //18 Characters Max
+        JLabel labelrow1B = new JLabel("Cookie Clicker"); //18 Characters Max
         row1B.add(labelrow1B);
         rowBCenter.add(row1B);
         secondRowPanels.add(row1B);
@@ -356,38 +470,56 @@ public class CookieClickerLayoutColored extends JFrame {
 
         Image img = new ImageIcon("assets/main_cookie_3.png").getImage();
         ImageButton actionButtonrow2B = new ImageButton(null, img);
+        
+        // Connect cookie button to gamestate
+        actionButtonrow2B.addActionListener(e -> {
+            gamestate.Click();
+            updateDisplay();
+
+            // Get screen coordinates of mouse
+            Point screenPoint = MouseInfo.getPointerInfo().getLocation();
+
+            // Convert to coordinates relative to the frame (not the button)
+            Point framePoint = getLayeredPane().getLocationOnScreen();
+            int clickX = screenPoint.x - framePoint.x;
+            int clickY = screenPoint.y - framePoint.y;
+
+            // Show floating text
+            showFloatingText(clickX, clickY, "+" + formatter.format(gamestate.getClickingPower()));
+        });
 
         row2B.add(actionButtonrow2B);
         rowBCenter.add(row2B);
         secondRowPanels.add(row2B);
 
-        // Row 3 (Text or Label)
+        // Row 3 (Text or Label - Cookie Count)
         JPanel row3B = new JPanel(new GridBagLayout()); // Instead of default FlowLayout
-        row3B.setBackground(new Color(0, 0, 0, 64)); // 128 = 50% transparency
+        // FIX: Make the panel fully opaque to fix the glitching issue
+        row3B.setBackground(new Color(0, 0, 0, 255)); 
         row3B.setOpaque(true);
 
-        JLabel labelrow3B = new JLabel("1.970");
-        row3B.add(labelrow3B);
+        cookieCountLabel = new JLabel("0.0");
+        row3B.add(cookieCountLabel);
         rowBCenter.add(row3B);
         secondRowPanels.add(row3B);
 
-        // Row 4 (Text or Label)
+        // Row 4 (Text or Label - Cookie Unit)
         JPanel row4B = new JPanel(new GridBagLayout()); // Instead of default FlowLayout
-        row4B.setBackground(new Color(0, 0, 0, 64));
+        row4B.setBackground(new Color(0, 0, 0, 255)); // Make fully opaque
         row4B.setOpaque(true);
 
-        JLabel labelrow4B = new JLabel("Trillion" + " " + "Cookies");
-        row4B.add(labelrow4B);
+        cookieUnitLabel = new JLabel("Cookies");
+        row4B.add(cookieUnitLabel);
         rowBCenter.add(row4B);
         secondRowPanels.add(row4B);
 
-        // Row 5 (Text or Label)
+        // Row 5 (Text or Label - CPS)
         JPanel row5B = new JPanel(new GridBagLayout()); // Instead of default FlowLayout
-        row5B.setBackground(new Color(0, 0, 0, 64)); // 128 = 50% transparency
+        row5B.setBackground(new Color(0, 0, 0, 255)); // Make fully opaque
         row5B.setOpaque(true);
         
-        JLabel labelrow5B = new JLabel("140.591" + " " + "Million" + " " + "per second");
-        row5B.add(labelrow5B);
+        cpsLabel = new JLabel("0.0 per second");
+        row5B.add(cpsLabel);
         rowBCenter.add(row5B);
         secondRowPanels.add(row5B);
 
@@ -483,16 +615,16 @@ public class CookieClickerLayoutColored extends JFrame {
 
                 // Set font for all labels
                 labelrow1B.setFont(scaledFont2);
-                labelrow3B.setFont(scaledFont2);
-                labelrow4B.setFont(scaledFont2);
-                labelrow5B.setFont(scaledFont3);
+                cookieCountLabel.setFont(scaledFont2);
+                cookieUnitLabel.setFont(scaledFont2);
+                cpsLabel.setFont(scaledFont3);
 
                 // Set font color for all labels
                 Color fontColor = new Color(0xFFFFFF);  // Dark slate gray
                 labelrow1B.setForeground(fontColor);
-                labelrow3B.setForeground(fontColor);
-                labelrow4B.setForeground(fontColor);
-                labelrow5B.setForeground(fontColor);
+                cookieCountLabel.setForeground(fontColor);
+                cookieUnitLabel.setForeground(fontColor);
+                cpsLabel.setForeground(fontColor);
 
                 // Set font for the action button (if applicable)
                 actionButtonrow2B.setFont(scaledFont2);  // Adjust font size for button as well
@@ -527,31 +659,62 @@ public class CookieClickerLayoutColored extends JFrame {
         }
         eastPanel.add(rowBEast);
 
-        // === Row C (1 row x 5 columns) ===
-        JPanel rowCEast = new JPanel(new GridLayout(1, 5));
+        // === Row C (1 row x 5 columns with different widths) ===
+        JPanel rowCEast = new JPanel();
+        rowCEast.setLayout(new BoxLayout(rowCEast, BoxLayout.X_AXIS));
         rowCEast.setBackground(new Color(0xA7EAA7));
-        for (int i = 0; i < 5; i++) {
-            JButton gen = new JButton("Gen " + (i + 1));
-            gen.setBackground(new Color(0xEAE77D));
-            genButtons.add(gen);
-            rowCEast.add(gen);
-        }
+
+        // Create label and buttons
+        JLabel gen1 = new JLabel("Buy", SwingConstants.CENTER);
+        gen1.setOpaque(true);
+        gen1.setBackground(new Color(0xEAE77D));
+
+        JButton gen2 = new JButton("1");
+        JButton gen3 = new JButton("10");
+        JButton gen4 = new JButton("100");
+        JButton gen5 = new JButton("S");
+
+        gen2.setBackground(new Color(0xEAE77D));
+        gen3.setBackground(new Color(0xEAE77D));
+        gen4.setBackground(new Color(0xEAE77D));
+        gen5.setBackground(new Color(0xEAE77D));
+
+        // Add to tracking lists
+        genLabel.add(gen1);
+        genButtons.add(gen2);
+        genButtons.add(gen3);
+        genButtons.add(gen4);
+        genButtons.add(gen5);
+
+        // Wrap each component in its own JPanel (needed for consistent sizing)
+        JPanel gen1Wrapper = new JPanel(new BorderLayout());
+        JPanel gen2Wrapper = new JPanel(new BorderLayout());
+        JPanel gen3Wrapper = new JPanel(new BorderLayout());
+        JPanel gen4Wrapper = new JPanel(new BorderLayout());
+        JPanel gen5Wrapper = new JPanel(new BorderLayout());
+
+        gen1Wrapper.add(gen1, BorderLayout.CENTER);
+        gen2Wrapper.add(gen2, BorderLayout.CENTER);
+        gen3Wrapper.add(gen3, BorderLayout.CENTER);
+        gen4Wrapper.add(gen4, BorderLayout.CENTER);
+        gen5Wrapper.add(gen5, BorderLayout.CENTER);
+
+        // Add wrappers to Row C
+        rowCEast.add(gen1Wrapper);
+        rowCEast.add(gen2Wrapper);
+        rowCEast.add(gen3Wrapper);
+        rowCEast.add(gen4Wrapper);
+        rowCEast.add(gen5Wrapper);
+
         eastPanel.add(rowCEast);
 
         // === Row D (Scrollable available upgrades) ===
-        JPanel availablePanel = new JPanel();
+        availablePanel = new JPanel(); // this now assigns to the field
         availablePanel.setLayout(new BoxLayout(availablePanel, BoxLayout.Y_AXIS));
         availablePanel.setBackground(new Color(0x7B89C4));
-        for (int i = 0; i < availableUpgrades; i++) {
-            JButton upgradeBtn = new JButton("Available Upgrade " + (i + 1));
-            upgradeBtn.setBackground(new Color(0xF7F4B7));
-            upgradeButtons.add(upgradeBtn); // store reference
-
-            JPanel wrapper = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
-            wrapper.setOpaque(false);
-            wrapper.add(upgradeBtn);
-            availablePanel.add(wrapper);
-        }
+        
+        // We'll populate this in the addUpgrade method
+        
         JScrollPane scrollAvailable = new JScrollPane(availablePanel);
         scrollAvailable.getViewport().setBackground(new Color(0xE59C9C));
         JPanel availableWrapper = new JPanel(new BorderLayout());
@@ -581,11 +744,14 @@ public class CookieClickerLayoutColored extends JFrame {
                 rowCEast.setPreferredSize(new Dimension(panelWidth, rowCHeight));
                 availableWrapper.setPreferredSize(new Dimension(panelWidth, rowDHeight));
 
-                // Resize upgrade buttons
-                int upgradeBtnWidth = (int) (frameWidth * 0.25);
-                int upgradeBtnHeight = (int) (frameHeight * 0.1); // ~8% of height
-                for (JButton btn : upgradeButtons) {
-                    btn.setPreferredSize(new Dimension(upgradeBtnWidth, upgradeBtnHeight));
+                // Update button size variables
+                upgradeBtnWidth = (int) (frameWidth * 0.25);
+                upgradeBtnHeight = (int) (frameHeight * 0.1);
+
+                // Resize upgrade wrappers
+                for (JPanel wrapper : upgradeWrappers) {
+                    wrapper.setPreferredSize(new Dimension(upgradeBtnWidth, upgradeBtnHeight));
+                    wrapper.setMinimumSize(new Dimension(upgradeBtnWidth, upgradeBtnHeight));
                 }
 
                 // Resize tool buttons (Row B)
@@ -595,21 +761,282 @@ public class CookieClickerLayoutColored extends JFrame {
                     btn.setPreferredSize(new Dimension(toolBtnWidth, toolBtnHeight));
                 }
 
-                // Resize gen buttons (Row C)
-                int genBtnWidth = (int) (frameWidth * 0.25);
-                int genBtnHeight = (int) (frameHeight * 0.05); // ~8% of height
-                for (JButton btn : genButtons) {
-                    btn.setPreferredSize(new Dimension(genBtnWidth, genBtnHeight));
+                // Resize gen buttons (Row C) with different widths
+                int totalWidth = panelWidth;
+
+                int genBtnHeight = (int) (frameHeight * 0.05);
+
+                // Calculate widths
+                int gen1Width = (int)(totalWidth * 0.355);
+                int gen2to4Width = (int)(totalWidth * 0.1775);
+                int gen5Width = (int)(totalWidth * 0.1125);
+
+                // Get wrapper components
+                Component[] wrappers = rowCEast.getComponents();
+
+                // Resize each wrapper
+                wrappers[0].setPreferredSize(new Dimension(gen1Width, genBtnHeight));
+                wrappers[1].setPreferredSize(new Dimension(gen2to4Width, genBtnHeight));
+                wrappers[2].setPreferredSize(new Dimension(gen2to4Width, genBtnHeight));
+                wrappers[3].setPreferredSize(new Dimension(gen2to4Width, genBtnHeight));
+                wrappers[4].setPreferredSize(new Dimension(gen5Width, genBtnHeight));
+
+                for (Component wrapper : wrappers) {
+                    wrapper.setMinimumSize(wrapper.getPreferredSize());
+                    wrapper.setMaximumSize(wrapper.getPreferredSize());
                 }
+
 
                 eastPanel.revalidate();
                 eastPanel.repaint();
             }
         });
 
+        // Set up UI update timer (16ms = ~60fps)
+        uiUpdateTimer = new Timer(16, e -> updateDisplay());
+        uiUpdateTimer.start();
+
+        Timer floatingLabelTimer = new Timer(16, e -> {
+            Iterator<FloatingLabel> iter = floatingLabels.iterator();
+            while (iter.hasNext()) {
+                FloatingLabel fl = iter.next();
+                if (fl.update()) {
+                    getLayeredPane().remove(fl.label);
+                    iter.remove();
+                }
+            }
+            getLayeredPane().repaint();
+        });
+        floatingLabelTimer.start();
+
         setVisible(true);
     }
 
+    // Method to add an upgrade to the UI
+    public void addUpgrade(Upgrade upgrade) {
+        upgrades.add(upgrade);
+        upgradePastStage1.add(false); // Initialize as not past Stage 1
 
-}
+        // Create a custom panel for the upgrade
+        UpgradePanel upgradePanel = new UpgradePanel(upgrade);
+        upgradePanels.add(upgradePanel);
+        
+        // Create a button for the upgrade
+        JButton upgradeBtn = new JButton();
+        upgradeBtn.setContentAreaFilled(false);
+        upgradeBtn.setBorderPainted(false);
+        upgradeBtn.setLayout(new BorderLayout());
+        upgradeBtn.add(upgradePanel, BorderLayout.CENTER);
+        
+        upgradeButtons.add(upgradeBtn);
 
+        // Set initial size for the button
+        upgradeBtn.setPreferredSize(new Dimension(upgradeBtnWidth, upgradeBtnHeight));
+        upgradeBtn.setMinimumSize(new Dimension(upgradeBtnWidth, upgradeBtnHeight));
+        upgradeBtn.setMaximumSize(new Dimension(upgradeBtnWidth, upgradeBtnHeight));
+
+        // Set initial background color
+        upgradePanel.setBackground(STAGE1_BG);
+        
+        // Add action listener to the button
+        upgradeBtn.addActionListener(e -> {
+            if (gamestate.tryBuyUpgrade(upgrade)) {
+                // Update to stage 3 after purchase
+                upgradePanel.updateStage(3, gamestate.getAmount());
+                upgradePanel.setBackground(STAGE3_BG);
+                updateDisplay();
+            }
+        });
+
+        // Create a wrapper panel for the upgrade button
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.setOpaque(false);
+        wrapper.add(upgradeBtn);
+        
+        // Initially hide the upgrade
+        wrapper.setVisible(false);
+        upgradeWrappers.add(wrapper);
+
+        // Add the wrapper to the availablePanel
+        availablePanel.add(wrapper);
+
+        // Make sure the panel is updated
+        availablePanel.revalidate();
+        availablePanel.repaint();
+
+        System.out.println("Added upgrade: " + upgrade.getName());
+    }
+
+    // Method to update upgrade visibility based on cookie count
+    private void updateUpgradeVisibility(int index, double cookieCount) {
+        if (index >= upgradeWrappers.size()) return;
+        
+        Upgrade upgrade = upgrades.get(index);
+        JPanel wrapper = upgradeWrappers.get(index);
+        UpgradePanel upgradePanel = upgradePanels.get(index);
+        
+        double cost = upgrade.getCost();
+        
+        // Check if we should move past Stage 1 (regardless of visibility)
+        if (cookieCount >= cost * 0.25 && !upgradePastStage1.get(index)) {
+            upgradePastStage1.set(index, true);
+            // Debug output
+            System.out.println("Upgrade " + upgrade.getName() + " passed Stage 1");
+        }
+        
+        // Count how many Stage 1 upgrades are currently visible
+        int visibleStage1Count = 0;
+        for (int i = 0; i < upgrades.size(); i++) {
+            if (i < upgradeWrappers.size() && upgradeWrappers.get(i).isVisible() && !upgradePastStage1.get(i)) {
+                visibleStage1Count++;
+            }
+        }
+        
+        // If this is the first upgrade or the previous one is visible
+        boolean shouldBeVisible = (index == 0) || 
+                         (index > 0 && upgradeWrappers.get(index-1).isVisible());
+        
+        // Only show if it should be visible and we haven't exceeded the Stage 1 limit
+        // or if this upgrade has already passed Stage 1
+        if (shouldBeVisible && (visibleStage1Count < 2 || upgradePastStage1.get(index))) {
+            wrapper.setVisible(true);
+            
+            // If this upgrade hasn't passed Stage 1 yet
+            if (!upgradePastStage1.get(index)) {
+                // Stage 1: First reveal
+                upgradeButtons.get(index).setEnabled(false);
+                upgradePanel.setBackground(STAGE1_BG); // Dark gray
+                upgradePanel.updateStage(1, cookieCount); // Show ??? for name
+            } 
+            // If this upgrade has passed Stage 1
+            else {
+                // Stage 3: Can afford (100%+ of cost)
+                if (cookieCount >= cost) {
+                    upgradeButtons.get(index).setEnabled(true);
+                    upgradePanel.setBackground(STAGE3_BG); // Original color
+                    upgradePanel.updateStage(3, cookieCount); // Show real name with green cost
+                } 
+                // Stage 2: Can't afford but has seen Stage 1
+                else {
+                    upgradeButtons.get(index).setEnabled(false);
+                    upgradePanel.setBackground(STAGE2_BG); // Lighter gray
+                    upgradePanel.updateStage(2, cookieCount); // Show real name with red cost
+                }
+            }
+        }
+        
+        // If this upgrade is visible and past Stage 1, show the next upgrade if it exists
+        if (wrapper.isVisible() && upgradePastStage1.get(index) && index + 1 < upgradeWrappers.size()) {
+            // Only show the next upgrade if it's not already visible and we have fewer than 2 Stage 1 upgrades
+            int currentStage1Count = 0;
+            for (int i = 0; i < upgrades.size(); i++) {
+                if (i < upgradeWrappers.size() && upgradeWrappers.get(i).isVisible() && !upgradePastStage1.get(i)) {
+                    currentStage1Count++;
+                }
+            }
+            
+            if (!upgradeWrappers.get(index + 1).isVisible() && currentStage1Count < 2) {
+                upgradeWrappers.get(index + 1).setVisible(true);
+                upgradeButtons.get(index + 1).setEnabled(false);
+                upgradePanels.get(index + 1).setBackground(STAGE1_BG);
+                upgradePanels.get(index + 1).updateStage(1, cookieCount);
+                // Debug output
+                System.out.println("Showing next upgrade: " + upgrades.get(index + 1).getName() + " in Stage 1");
+            }
+        }
+    }
+    
+    // Method to update the display with current game state
+    private void updateDisplay() {
+        double amount = gamestate.getAmount();
+        double cps = gamestate.GetCPS();
+        
+        // Format the numbers for display
+        String formattedAmount = formatNumber(amount);
+        String unit = getUnit(amount);
+        String formattedCPS = formatNumber(cps);
+        String cpsUnit = getUnit(cps);
+        
+        // Update the labels
+        cookieCountLabel.setText(formattedAmount);
+        cookieUnitLabel.setText(unit + " Cookies");
+        cpsLabel.setText(formattedCPS + " " + cpsUnit + " per second");
+        
+        // Update upgrade buttons
+        for (int i = 0; i < upgrades.size(); i++) {
+            if (i < upgradeButtons.size()) {
+                // Update visibility and appearance based on cookie count
+                updateUpgradeVisibility(i, amount);
+            }
+        }
+    }
+    
+    // Helper method to format large numbers
+    private String formatNumber(double number) {
+        if (number < 100000) {
+            return formatter.format(number);
+        } else if (number < 1000000) {
+            return formatter.format(number / 1000);
+        } else if (number < 1000000000) {
+            return formatter.format(number / 1000000);
+        } else if (number < 1000000000000L) {
+            return formatter.format(number / 1000000000);
+        } else {
+            return formatter.format(number / 1000000000000L);
+        }
+    }
+    
+    // Helper method to get the unit for large numbers
+    private String getUnit(double number) {
+        if (number < 100000) {
+            return "";
+        } else if (number < 1000000) {
+            return "Thousand";
+        } else if (number < 1000000000) {
+            return "Million";
+        } else if (number < 1000000000000L) {
+            return "Billion";
+        } else {
+            return "Trillion";
+        }
+    }
+
+    private class FloatingLabel {
+        JLabel label;
+        int lifetime = 0;
+        int maxLifetime = 60;
+
+        public FloatingLabel(JLabel label) {
+            this.label = label;
+        }
+
+        public boolean update() {
+            int dy = 3;
+            float opacity = 1.0f - (lifetime / (float) maxLifetime);
+            label.setLocation(label.getX(), label.getY() - dy);
+            label.setForeground(new Color(255, 255, 255, Math.max(0, (int) (255 * opacity))));
+            lifetime++;
+            return lifetime >= maxLifetime;
+        }
+    }
+
+    private void showFloatingText(int x, int y, String text) {
+        int frameHeight = getHeight();
+        
+        // Calculate font size as a percentage of the frame height
+        int baseFontSize = (int) (frameHeight * 0.03);  // Adjust this percentage as needed
+        
+        // Create label and set properties
+        JLabel label = new JLabel(text);
+        label.setFont(new Font("Garamond", Font.BOLD, baseFontSize));  // Use dynamically calculated font size
+        label.setForeground(new Color(255, 255, 255));
+        label.setSize(label.getPreferredSize());
+        label.setLocation(x, y);
+        label.setOpaque(false);
+        label.setBorder(null);
+        
+        // Add label to layered pane
+        getLayeredPane().add(label, JLayeredPane.POPUP_LAYER);
+        floatingLabels.add(new FloatingLabel(label));
+    }
+}   

@@ -26,6 +26,10 @@ public class Gamestate {
         amount += clickPWR;
     }
 
+    public double getClickingPower() {
+        return clickPWR;
+    }
+
     public void receive(double a){
         CPStotal += a;
     }
