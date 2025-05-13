@@ -1,13 +1,16 @@
+import java.util.HashMap;
+
 public class Gamestate {
     private double CPStotal;
     private double clickPWR;
     public double amount;
+    private HashMap<String, Double> items = new HashMap<>();
     
     public Gamestate(double CPS){
         this.CPStotal = CPS;
-        this.amount = 0;
+        this.amount = 200000;
         this.clickPWR = 1;
-        
+        this.items = new HashMap<>();
     }
 
     public void upgradeClick(double a){
@@ -30,8 +33,15 @@ public class Gamestate {
         return clickPWR;
     }
 
-    public void receive(double a){
-        CPStotal += a;
+    public void receive(String name, double CPS){
+        items.put(name, CPS);
+
+        double Sum = 0;
+        for (double itemCPS : items.values()) {
+            Sum += itemCPS;
+        }
+
+        CPStotal = Sum;
     }
 
     public double GetCPS(){
@@ -42,13 +52,15 @@ public class Gamestate {
         amount -= a;
     }
 
-    public boolean tryBuyUpgrade(Upgrade upgrade) {
-        double cost = upgrade.getCost();
+    public boolean tryBuyUpgrade(Upgrade upgrade, int Quantity) {
+        double cost = upgrade.getCost(Quantity);
         if (amount >= cost) {
             amount -= cost;
-            upgrade.buy();
+            upgrade.buy(Quantity);
             return true;
         }
         return false;
     }
+
+    
 }   

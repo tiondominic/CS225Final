@@ -18,16 +18,25 @@ public class Upgrade {
     }   
     
 
-    public void buy(){
-        owned++;
-        baseCost = baseCost*multiplier;
+    public void buy(int Quantity){
+        owned += Quantity;
+        double totalCPS = baseCPS * owned;
+
+        for(int i=1; i <= Quantity; i++){
+            baseCost = baseCost*multiplier;
+        }
         
         if(CursorUpgrade){
             gamestate.upgradeClick(baseCPS);
         }
         else{
-            gamestate.receive(baseCPS);
+            gamestate.receive(name, totalCPS);
         }
+    }
+
+    public void sell(){
+        owned--;
+
     }
 
     public String getName(){
@@ -38,8 +47,13 @@ public class Upgrade {
         return owned;
     }
 
-    public double getCost(){
-        return baseCost;
+    public double getCost(int quantity) {
+        double totalCost = 0;
+        for (int i = 0; i < quantity; i++) {
+            totalCost += baseCost * Math.pow(multiplier, i); 
+        }
+        return totalCost;
     }
-
 }
+
+

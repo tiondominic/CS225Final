@@ -1,8 +1,8 @@
 public class Main {
     public static void main(String[] args) {
-        Gamestate gamestate = new Gamestate(10); 
+        Gamestate gamestate = new Gamestate(0); 
         GameTick gameTick = new GameTick(gamestate);
-        
+
         CookieClickerLayoutColored mainwindow = new CookieClickerLayoutColored(gamestate);
         
         // Add upgrades to the UI

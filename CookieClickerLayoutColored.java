@@ -1,12 +1,12 @@
 import java.awt.*;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Iterator;
+import java.util.List;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import java.text.DecimalFormat;
 
 class ImageButton extends JButton {
     private final Image image;
@@ -153,7 +153,7 @@ class UpgradePanel extends JPanel {
         nameLabel.setHorizontalAlignment(SwingConstants.CENTER);
         nameLabel.setFont(nameLabel.getFont().deriveFont(Font.BOLD, 14f));
         
-        costLabel = new JLabel("Cost: " + formatter.format(upgrade.getCost()));
+        costLabel = new JLabel("Cost: " + formatter.format(upgrade.getCost(Global.getQuantity())));
         costLabel.setHorizontalAlignment(SwingConstants.CENTER);
         costLabel.setForeground(RED_TEXT);
         
@@ -193,7 +193,7 @@ class UpgradePanel extends JPanel {
         }
         
         // Update cost text and color
-        costLabel.setText("Cost: " + formatter.format(upgrade.getCost()));
+        costLabel.setText("Cost: " + formatter.format(upgrade.getCost(Global.getQuantity())));
         if (stage == 3) {
             costLabel.setForeground(GREEN_TEXT);
         } else {
@@ -669,10 +669,10 @@ public class CookieClickerLayoutColored extends JFrame {
         gen1.setOpaque(true);
         gen1.setBackground(new Color(0xEAE77D));
 
-        JButton gen2 = new JButton("1");
-        JButton gen3 = new JButton("10");
-        JButton gen4 = new JButton("100");
-        JButton gen5 = new JButton("S");
+        JButton gen2 = new JButton("1"); gen2.addActionListener(e -> {Global.setQuantity(1);});
+        JButton gen3 = new JButton("10"); gen3.addActionListener(e -> {Global.setQuantity(10);});
+        JButton gen4 = new JButton("100"); gen4.addActionListener(e -> {Global.setQuantity(100);});
+        JButton gen5 = new JButton("S"); // no sell mode  yet
 
         gen2.setBackground(new Color(0xEAE77D));
         gen3.setBackground(new Color(0xEAE77D));
@@ -840,7 +840,7 @@ public class CookieClickerLayoutColored extends JFrame {
         
         // Add action listener to the button
         upgradeBtn.addActionListener(e -> {
-            if (gamestate.tryBuyUpgrade(upgrade)) {
+            if (gamestate.tryBuyUpgrade(upgrade, Global.getQuantity())) {
                 // Update to stage 3 after purchase
                 upgradePanel.updateStage(3, gamestate.getAmount());
                 upgradePanel.setBackground(STAGE3_BG);
@@ -875,7 +875,7 @@ public class CookieClickerLayoutColored extends JFrame {
         JPanel wrapper = upgradeWrappers.get(index);
         UpgradePanel upgradePanel = upgradePanels.get(index);
         
-        double cost = upgrade.getCost();
+        double cost = upgrade.getCost(Global.getQuantity());
         
         // Check if we should move past Stage 1 (regardless of visibility)
         if (cookieCount >= cost * 0.25 && !upgradePastStage1.get(index)) {
