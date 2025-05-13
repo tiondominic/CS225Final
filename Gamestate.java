@@ -8,7 +8,7 @@ public class Gamestate {
     
     public Gamestate(double CPS){
         this.CPStotal = CPS;
-        this.amount = 200000;
+        this.amount = 0;
         this.clickPWR = 1;
         this.items = new HashMap<>();
     }

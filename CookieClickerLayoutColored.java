@@ -508,7 +508,7 @@ public class CookieClickerLayoutColored extends JFrame {
 
         Image row3BImage = new ImageIcon("assets/center_row2_rowC.png").getImage();  // Load your background image
         JPanel row3B = new ImageBackgroundPanel(row3BImage);  // Use the custom panel
-        row3B.setLayout(new GridBagLayout());  // ← Center contents
+        row3B.setLayout(new GridBagLayout());  // Center contents
         row3B.setBackground(new Color(0xE59C9C));
         row3B.setAlignmentX(Component.CENTER_ALIGNMENT);
         row3B.setOpaque(false);
@@ -520,7 +520,7 @@ public class CookieClickerLayoutColored extends JFrame {
 
         Image row4BImage = new ImageIcon("assets/center_row2_rowD.png").getImage();  // Load your background image
         JPanel row4B = new ImageBackgroundPanel(row4BImage);  // Use the custom panel
-        row4B.setLayout(new GridBagLayout());  // ← Center contents
+        row4B.setLayout(new GridBagLayout());  // Center contents
         row4B.setBackground(new Color(0xE59C9C));
         row4B.setAlignmentX(Component.CENTER_ALIGNMENT);
         row4B.setOpaque(false);
@@ -532,7 +532,7 @@ public class CookieClickerLayoutColored extends JFrame {
 
         Image row5BImage = new ImageIcon("assets/center_row2_rowE.png").getImage();  // Load your background image
         JPanel row5B = new ImageBackgroundPanel(row5BImage);  // Use the custom panel
-        row5B.setLayout(new GridBagLayout());  // ← Center contents
+        row5B.setLayout(new GridBagLayout());  // Center contents
         row5B.setBackground(new Color(0xE59C9C));
         row5B.setAlignmentX(Component.CENTER_ALIGNMENT);
         row5B.setOpaque(false);
