@@ -5,12 +5,16 @@ public class Gamestate {
     private double clickPWR;
     public double amount;
     private HashMap<String, Double> items = new HashMap<>();
+    private HashMap<String, Double> TotalCPS = new HashMap<>();
     
     public Gamestate(double CPS){
         this.CPStotal = CPS;
         this.amount = 0;
         this.clickPWR = 1;
         this.items = new HashMap<>();
+        this.TotalCPS = new HashMap<>();
+
+        TotalCPS.put("StartingCPS", CPS);
     }
 
     public void upgradeClick(double a){
@@ -41,10 +45,15 @@ public class Gamestate {
             Sum += itemCPS;
         }
 
-        CPStotal = Sum;
+        TotalCPS.put("CPSupgrades", Sum);
     }
 
     public double GetCPS(){
+        double Sum = 0;
+        for (double itemCPS : TotalCPS.values()) {
+            Sum += itemCPS;
+        }
+        CPStotal = Sum;
         return CPStotal;
     }
 
@@ -52,15 +61,26 @@ public class Gamestate {
         amount -= a;
     }
 
-    public boolean tryBuyUpgrade(Upgrade upgrade, int Quantity) {
+    public boolean Transact(Upgrade upgrade, int Quantity, String Mode) {
         double cost = upgrade.getCost(Quantity);
-        if (amount >= cost) {
-            amount -= cost;
-            upgrade.buy(Quantity);
-            return true;
+
+        if (Mode.equalsIgnoreCase("BUY")) {
+            if (amount >= cost) {
+                amount -= cost;
+                upgrade.buy(Quantity);
+                return true;
+            }
+            return false;
         }
+
+        if (Mode.equalsIgnoreCase("SELL")) {
+            if(Quantity <= upgrade.getOwned()){
+                upgrade.sell(Quantity);
+                amount += cost *0.9;
+                return true;
+            }
+        }
+
         return false;
     }
-
-    
 }   

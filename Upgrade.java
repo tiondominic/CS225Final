@@ -34,8 +34,16 @@ public class Upgrade {
         }
     }
 
-    public void sell(){
-        owned--;
+    public void sell(int Quantity){
+        owned -= Quantity;
+
+        for(int i=1; i <= Quantity; i++){
+            baseCost = baseCost/multiplier;
+        }
+
+        double totalCPS = baseCPS * owned;
+
+        gamestate.receive(name, totalCPS);
 
     }
 
@@ -54,6 +62,8 @@ public class Upgrade {
         }
         return totalCost;
     }
+
+
 }
 
 

@@ -1,4 +1,5 @@
 import java.awt.*;
+import java.awt.event.ActionListener;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.text.DecimalFormat;
@@ -7,9 +8,6 @@ import java.util.Iterator;
 import java.util.List;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-
-import java.awt.event.ActionListener;
-import java.awt.event.ActionEvent;
 
 class NumberFormatter {
     private static final DecimalFormat formatter0 = new DecimalFormat("#,###");      // No decimals
@@ -859,8 +857,10 @@ public class Gamewindow extends JFrame {
         gen5.addActionListener(e -> {
             if (gen1.getText().equalsIgnoreCase("Buy")) {
                 gen1.setText("Sell");
+                Global.setMode("SELL");
             } else {
                 gen1.setText("Buy");
+                Global.setMode("BUY");
             }
         });
 
@@ -1038,7 +1038,7 @@ public class Gamewindow extends JFrame {
         
         // Add action listener to the button
         upgradeBtn.addActionListener(e -> {
-            if (gamestate.tryBuyUpgrade(upgrade, Global.getQuantity())) {
+            if (gamestate.Transact(upgrade, Global.getQuantity(), Global.getMode())) {
                 // Update to stage 3 after purchase
                 upgradePanel.updateStage(3, gamestate.getAmount());
                 upgradePanel.setBackground(STAGE3_BG);

@@ -1,6 +1,6 @@
 public class Main {
     public static void main(String[] args) {
-        Gamestate gamestate = new Gamestate(10000000); 
+        Gamestate gamestate = new Gamestate(0); 
         GameTick gameTick = new GameTick(gamestate);
 
         Gamewindow mainwindow = new Gamewindow(gamestate);
