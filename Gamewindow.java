@@ -599,7 +599,7 @@ public class Gamewindow extends JFrame {
             int clickY = screenPoint.y - framePoint.y;
 
             // Show floating text
-            showFloatingText(clickX, clickY, "+" + formatter1.format(gamestate.getClickingPower()));
+            showFloatingText(clickX, clickY, "+" + NumberFormatter.formatNumber(gamestate.getClickingPower()));
         });
 
         row2B.add(actionButtonrow2B);
@@ -1108,17 +1108,27 @@ public class Gamewindow extends JFrame {
             } 
             // If this upgrade has passed Stage 1
             else {
-                // Stage 3: Can afford (100%+ of cost)
-                if (cookieCount >= cost) {
-                    upgradeButtons.get(index).setEnabled(true);
-                    upgradePanel.setBackground(STAGE3_BG); // Original color
-                    upgradePanel.updateStage(3, cookieCount); // Show real name with green cost
-                } 
-                // Stage 2: Can't afford but has seen Stage 1
-                else {
-                    upgradeButtons.get(index).setEnabled(false);
-                    upgradePanel.setBackground(STAGE2_BG); // Lighter gray
-                    upgradePanel.updateStage(2, cookieCount); // Show real name with red cost
+                if (Global.getMode().equals("SELL")) {
+                    if (upgrade.getOwned() >= Global.getQuantity()) {
+                        upgradeButtons.get(index).setEnabled(true);
+                        upgradePanel.setBackground(STAGE3_BG); // Selling is available
+                        upgradePanel.updateStage(3, cookieCount); // Show real name, maybe different label?
+                    } else {
+                        upgradeButtons.get(index).setEnabled(false);
+                        upgradePanel.setBackground(STAGE2_BG); // Still gray
+                        upgradePanel.updateStage(2, cookieCount); // Show real name
+                    }
+                } else {
+                    // BUY mode logic
+                    if (cookieCount >= cost) {
+                        upgradeButtons.get(index).setEnabled(true);
+                        upgradePanel.setBackground(STAGE3_BG); // Original color
+                        upgradePanel.updateStage(3, cookieCount); // Show real name with green cost
+                    } else {
+                        upgradeButtons.get(index).setEnabled(false);
+                        upgradePanel.setBackground(STAGE2_BG); // Lighter gray
+                        upgradePanel.updateStage(2, cookieCount); // Show real name with red cost
+                    }
                 }
             }
         }

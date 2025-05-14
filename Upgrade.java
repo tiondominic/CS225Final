@@ -1,6 +1,6 @@
 public class Upgrade {
     private final String name;
-    private double baseCost;
+    private final double baseCost;
     private int owned;
     private final double baseCPS;
     private final double multiplier;
@@ -15,36 +15,41 @@ public class Upgrade {
         this.multiplier = 1.15;
         this.owned = 0;
         this.CursorUpgrade = CursorUpgrade;
-    }   
-    
+    }
 
-    public void buy(int Quantity){
-        owned += Quantity;
-        double totalCPS = baseCPS * owned;
+    public void buy(int quantity){
+        double totalCPS = baseCPS * (owned + quantity);
+        owned += quantity;
 
-        for(int i=1; i <= Quantity; i++){
-            baseCost = baseCost*multiplier;
-        }
-        
         if(CursorUpgrade){
             gamestate.upgradeClick(baseCPS);
-        }
-        else{
+        } else {
             gamestate.receive(name, totalCPS);
         }
     }
 
-    public void sell(int Quantity){
-        owned -= Quantity;
-
-        for(int i=1; i <= Quantity; i++){
-            baseCost = baseCost/multiplier;
-        }
+    public void sell(int quantity){
+        owned -= quantity;
 
         double totalCPS = baseCPS * owned;
 
         gamestate.receive(name, totalCPS);
+    }
 
+    public double getCost(int quantity) {
+        double cost = 0;
+        for (int i = 0; i < quantity; i++) {
+            cost += baseCost * Math.pow(multiplier, owned + i);
+        }
+        return cost;
+    }
+
+    public double getSellValue(int quantity) {
+        double value = 0;
+        for (int i = 0; i < quantity; i++) {
+            value += baseCost * Math.pow(multiplier, owned - i - 1);
+        }
+        return value * 0.9;
     }
 
     public String getName(){
@@ -55,15 +60,7 @@ public class Upgrade {
         return owned;
     }
 
-    public double getCost(int quantity) {
-        double totalCost = 0;
-        for (int i = 0; i < quantity; i++) {
-            totalCost += baseCost * Math.pow(multiplier, i); 
-        }
-        return totalCost;
+    public int getUpgradeOwnedCount(Upgrade upgrade) {
+        return upgrade.getOwned();
     }
-
-
 }
-
-
