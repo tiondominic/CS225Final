@@ -8,6 +8,102 @@ import java.util.List;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 
+import java.awt.event.ActionListener;
+import java.awt.event.ActionEvent;
+
+class NumberFormatter {
+    private static final DecimalFormat formatter0 = new DecimalFormat("#,###");      // No decimals
+    private static final DecimalFormat formatter1 = new DecimalFormat("#,###.0");    // One decimal
+    private static final DecimalFormat formatter2 = new DecimalFormat("#,###.00");   // Two decimals
+    private static final DecimalFormat formatter3 = new DecimalFormat("#,###.000");  // Three decimals
+
+    public static String formatNumber(double number) {
+        if (number < 100) {
+            return formatter0.format(number);
+        } else if (number < 100000) {
+            return formatter1.format(number);
+        } else if (number < 1000000) {
+            return formatter2.format(number / 1000);
+        } else if (number < 1000000000) {
+            return formatter3.format(number / 1000000);
+        } else if (number < 1000000000000L) {
+            return formatter3.format(number / 1000000000);
+        } else {
+            return formatter3.format(number / 1000000000000L);
+        }
+    }
+
+    public static String getUnit(double number) {
+        if (number < 100000) {
+            return "";
+        } else if (number < 1000000) {
+            return "Thousand";
+        } else if (number < 1000000000) {
+            return "Million";
+        } else if (number < 1000000000000L) {
+            return "Billion";
+        } else {
+            return "Trillion";
+        }
+    }
+}
+
+class StaticImageButton extends JButton {
+    private final Image image;
+
+    public StaticImageButton(String text, Image image) {
+        super(text);
+        this.image = image;
+        setContentAreaFilled(false);
+        setBorderPainted(false);
+        setFocusPainted(false);
+        setOpaque(false);
+        setText(null); // Remove text display
+        setRolloverEnabled(true); // Enable hover
+    }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        Graphics2D g2d = (Graphics2D) g.create();
+
+        // Enable quality rendering
+        g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+        g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Button state logic
+        boolean isPressed = getModel().isArmed() && getModel().isPressed();
+        boolean isHovered = getModel().isRollover();
+
+        // Scale factor
+        double scale = 1;
+        if (isPressed) {
+            scale = 0.8;
+        } else if (isHovered) {
+            scale = 0.95;
+        }
+
+        int buttonWidth = getWidth();
+        int buttonHeight = getHeight();
+
+        // Maintain image aspect ratio
+        double imgAspect = (double) image.getWidth(null) / image.getHeight(null);
+        int drawWidth = (int) (buttonWidth * scale);
+        int drawHeight = (int) (drawWidth / imgAspect);
+
+        if (drawHeight > buttonHeight * scale) {
+            drawHeight = (int) (buttonHeight * scale);
+            drawWidth = (int) (drawHeight * imgAspect);
+        }
+
+        int x = (buttonWidth - drawWidth) / 2;
+        int y = (buttonHeight - drawHeight) / 2;
+
+        g2d.drawImage(image, x, y, drawWidth, drawHeight, this);
+        g2d.dispose();
+    }
+}
+
 class ImageButton extends JButton {
     private final Image image;
     private double rotationAngle = 0;
@@ -128,11 +224,11 @@ class UpgradePanel extends JPanel {
     private final Color RED_TEXT = new Color(0xFF0000);
     private final Color GREEN_TEXT = new Color(0x00AA00);
     private final Upgrade upgrade;
-    private final DecimalFormat formatter = new DecimalFormat("#,###.0");
     
     public UpgradePanel(Upgrade upgrade) {
         this.upgrade = upgrade;
         setLayout(new BorderLayout());
+
         
         // Create a panel with GridLayout for the three columns
         JPanel contentPanel = new JPanel(new GridLayout(1, 3));
@@ -153,7 +249,11 @@ class UpgradePanel extends JPanel {
         nameLabel.setHorizontalAlignment(SwingConstants.CENTER);
         nameLabel.setFont(nameLabel.getFont().deriveFont(Font.BOLD, 14f));
         
-        costLabel = new JLabel("Cost: " + formatter.format(upgrade.getCost(Global.getQuantity())));
+        double cost = upgrade.getCost(Global.getQuantity());
+        String formattedCost = NumberFormatter.formatNumber(cost);
+        String unit = NumberFormatter.getUnit(cost);
+        costLabel = new JLabel("Cost: " + formattedCost + " " + unit);
+
         costLabel.setHorizontalAlignment(SwingConstants.CENTER);
         costLabel.setForeground(RED_TEXT);
         
@@ -184,16 +284,21 @@ class UpgradePanel extends JPanel {
     public void updateStage(int stage, double cookieCount) {
         // Update owned count
         ownedLabel.setText(String.valueOf(upgrade.getOwned()));
-        
+
         // Update name based on stage
         if (stage == 1) {
             nameLabel.setText("???");
         } else {
             nameLabel.setText(upgrade.getName());
         }
-        
-        // Update cost text and color
-        costLabel.setText("Cost: " + formatter.format(upgrade.getCost(Global.getQuantity())));
+
+        // Use shared NumberFormatter for cost formatting
+        double cost = upgrade.getCost(Global.getQuantity());
+        String formattedCost = NumberFormatter.formatNumber(cost);
+        String unit = NumberFormatter.getUnit(cost);
+        costLabel.setText("Cost: " + formattedCost + " " + unit);
+
+        // Set cost color based on stage
         if (stage == 3) {
             costLabel.setForeground(GREEN_TEXT);
         } else {
@@ -202,7 +307,7 @@ class UpgradePanel extends JPanel {
     }
 }
 
-public class CookieClickerLayoutColored extends JFrame {
+public class Gamewindow extends JFrame {
 
     // Example dynamic row counts
     private int purchasedUpgrades = 10;
@@ -221,19 +326,16 @@ public class CookieClickerLayoutColored extends JFrame {
     private int upgradeBtnHeight;
     private List<JPanel> upgradeWrappers = new ArrayList<>();
     private List<UpgradePanel> upgradePanels = new ArrayList<>();
-    private int visibleUpgrades = 0;
     private final List<FloatingLabel> floatingLabels = new ArrayList<>();
 
     // Colors for upgrade stages
     private final Color STAGE1_BG = new Color(0x333333); // Dark gray
     private final Color STAGE2_BG = new Color(0x777777); // Lighter gray
     private final Color STAGE3_BG = new Color(0xF7F4B7); // Original color
-    private final Color RED_TEXT = new Color(0xFF0000); // Red
-    private final Color GREEN_TEXT = new Color(0x00AA00); // Green
-    private final Color WHITE_TEXT = new Color(0xFFFFFF); // White
 
     List<JButton> upgradeButtons = new ArrayList<>();
     List<JButton> toolButtons = new ArrayList<>();
+    List<JToggleButton> genToggleButtons = new ArrayList<>();
     List<JButton> genButtons = new ArrayList<>();
     List<JLabel> genLabel = new ArrayList<>();
 
@@ -250,15 +352,15 @@ public class CookieClickerLayoutColored extends JFrame {
     // Add a new list to track which upgrades have passed Stage 1
     private List<Boolean> upgradePastStage1 = new ArrayList<>();
     
-    public CookieClickerLayoutColored(Gamestate gamestate) {
+    public Gamewindow(Gamestate gamestate) {
         this.gamestate = gamestate;
         setTitle("Cookie Clicker Layout - Colored");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         // Set size to 80% width and 80% height of the screen, and center it
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-        int width = (int) (screenSize.width * 0.8);
-        int height = (int) (screenSize.height * 0.8);
+        int width = (int) (screenSize.width * 0.85);
+        int height = (int) (screenSize.height * 0.82);
         setSize(width, height);
         setLocationRelativeTo(null); // Centers the window
 
@@ -329,8 +431,8 @@ public class CookieClickerLayoutColored extends JFrame {
         addComponentListener(new ComponentAdapter() {
             @Override
             public void componentResized(ComponentEvent e) {
-                int frameWidth = getWidth();
-                int frameHeight = getHeight();
+                int frameWidth = (getWidth() - 16);
+                int frameHeight = (getHeight() + 24);
 
                 int panelWidth = (int) (frameWidth * 0.25); // 25% width of frame
                 int rowAHeight = (int) (frameHeight * 0.1125); // 11.25% height
@@ -387,10 +489,10 @@ public class CookieClickerLayoutColored extends JFrame {
         column1A.setBackground(new Color(0xA7EAA7));
         rowACenter.add(column1A);
 
-        // Button 1
-        JButton column1AButton1 = new JButton("Options");
-        column1AButton1.setBackground(new Color(0xEAE77D));
+        Image staticButtonImage1 = new ImageIcon("assets/center_row1_columnA1.png").getImage();
+        StaticImageButton column1AButton1 = new StaticImageButton("Options", staticButtonImage1);
         column1AButton1.addActionListener(e -> System.out.println("Button 1 clicked"));
+
         firstRowButtons.add(column1AButton1);
 
         JPanel button1Wrapper = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
@@ -398,13 +500,11 @@ public class CookieClickerLayoutColored extends JFrame {
         button1Wrapper.add(column1AButton1);
         column1A.add(button1Wrapper);
 
-        // Spacer
-        column1A.add(Box.createVerticalStrut(5));
-
         // Button 2
-        JButton column1AButton2 = new JButton("Stats");
-        column1AButton2.setBackground(new Color(0xEAE77D));
+        Image staticButtonImage2 = new ImageIcon("assets/center_row1_columnA2.png").getImage();
+        StaticImageButton column1AButton2 = new StaticImageButton("Options", staticButtonImage2);
         column1AButton2.addActionListener(e -> System.out.println("Button 2 clicked"));
+
         firstRowButtons.add(column1AButton2);
 
         JPanel button2Wrapper = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
@@ -433,9 +533,10 @@ public class CookieClickerLayoutColored extends JFrame {
         rowACenter.add(column3A);
 
         // Button 3
-        JButton column3AButton1 = new JButton("Info");
-        column3AButton1.setBackground(new Color(0xEAE77D));
+        Image staticButtonImage3 = new ImageIcon("assets/center_row1_columnC1.png").getImage();
+        StaticImageButton column3AButton1 = new StaticImageButton("Options", staticButtonImage3);
         column3AButton1.addActionListener(e -> System.out.println("Button 3 clicked"));
+        
         firstRowButtons.add(column3AButton1);
 
         JPanel button3Wrapper = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
@@ -443,12 +544,10 @@ public class CookieClickerLayoutColored extends JFrame {
         button3Wrapper.add(column3AButton1);
         column3A.add(button3Wrapper);
 
-        // Spacer
-        column3A.add(Box.createVerticalStrut(5));
-
         // Button 4
-        JButton column3AButton2 = new JButton("Help");
-        column3AButton2.setBackground(new Color(0xEAE77D));
+        // Button 3
+        Image staticButtonImage4 = new ImageIcon("assets/center_row1_columnC2.png").getImage();
+        StaticImageButton column3AButton2 = new StaticImageButton("Options", staticButtonImage4);
         column3AButton2.addActionListener(e -> System.out.println("Button 4 clicked"));
         firstRowButtons.add(column3AButton2);
 
@@ -468,11 +567,14 @@ public class CookieClickerLayoutColored extends JFrame {
         centerRows.add(rowBCenter);
 
         // Row 1 (Text or Label)
-        JPanel row1B = new JPanel(new GridBagLayout()); // Instead of default FlowLayout
-        row1B.setBackground(new Color(0, 0, 0, 64)); // 128 = 50% transparency
-        row1B.setOpaque(true);
+        Image row1BImage = new ImageIcon("assets/center_row2_rowA.png").getImage();  // Load your background image
+        JPanel row1B = new ImageBackgroundPanel(row1BImage);  // Use the custom panel
+        row1B.setLayout(new GridBagLayout());  // Center contents
+        row1B.setBackground(new Color(0xE59C9C));
+        row1B.setAlignmentX(Component.CENTER_ALIGNMENT);
+        row1B.setOpaque(false);
 
-        JLabel labelrow1B = new JLabel("Cookie Clicker"); //18 Characters Max
+        JLabel labelrow1B = new JLabel("Cookie Clicker" + "\'s " + "Bakery"); //18 Characters Max
         row1B.add(labelrow1B);
         rowBCenter.add(row1B);
         secondRowPanels.add(row1B);
@@ -508,13 +610,21 @@ public class CookieClickerLayoutColored extends JFrame {
 
         Image row3BImage = new ImageIcon("assets/center_row2_rowC.png").getImage();  // Load your background image
         JPanel row3B = new ImageBackgroundPanel(row3BImage);  // Use the custom panel
-        row3B.setLayout(new GridBagLayout());  // Center contents
         row3B.setBackground(new Color(0xE59C9C));
         row3B.setAlignmentX(Component.CENTER_ALIGNMENT);
         row3B.setOpaque(false);
 
+        row3B.setLayout(new GridBagLayout());
+        GridBagConstraints gbcBottom = new GridBagConstraints();
+        gbcBottom.gridx = 0;
+        gbcBottom.gridy = 0;
+        gbcBottom.weighty = 1.0;
+        gbcBottom.weightx = 1.0;
+        gbcBottom.anchor = GridBagConstraints.SOUTH; // Align to bottom
+        gbcBottom.fill = GridBagConstraints.NONE;
+
         cookieCountLabel = new JLabel("0.0");
-        row3B.add(cookieCountLabel);
+        row3B.add(cookieCountLabel, gbcBottom);
         rowBCenter.add(row3B);
         secondRowPanels.add(row3B);
 
@@ -532,13 +642,22 @@ public class CookieClickerLayoutColored extends JFrame {
 
         Image row5BImage = new ImageIcon("assets/center_row2_rowE.png").getImage();  // Load your background image
         JPanel row5B = new ImageBackgroundPanel(row5BImage);  // Use the custom panel
-        row5B.setLayout(new GridBagLayout());  // Center contents
+
         row5B.setBackground(new Color(0xE59C9C));
         row5B.setAlignmentX(Component.CENTER_ALIGNMENT);
         row5B.setOpaque(false);
         
+        row5B.setLayout(new GridBagLayout());
+        GridBagConstraints gbcTop = new GridBagConstraints();
+        gbcTop.gridx = 0;
+        gbcTop.gridy = 0;
+        gbcTop.weighty = 1.0;
+        gbcTop.weightx = 1.0;
+        gbcTop.anchor = GridBagConstraints.NORTH; // Align to top
+        gbcTop.fill = GridBagConstraints.NONE;
+
         cpsLabel = new JLabel("0.0 per second");
-        row5B.add(cpsLabel);
+        row5B.add(cpsLabel, gbcTop);
         rowBCenter.add(row5B);
         secondRowPanels.add(row5B);
 
@@ -555,15 +674,16 @@ public class CookieClickerLayoutColored extends JFrame {
         centerPanel.addComponentListener(new ComponentAdapter() {
         @Override
         public void componentResized(ComponentEvent e) {
-            int frameWidth = getWidth();
-            int frameHeight = getHeight();
+            int frameWidth = (getWidth() - 16);
+            int frameHeight = (getHeight() + 24);
 
             // === CENTER PANEL SIZE ===
             int centerPanelWidth = (int) (frameWidth * 0.5); // 50% width
             centerPanel.setPreferredSize(new Dimension(centerPanelWidth, frameHeight));
+            System.out.println("centerPanel preferred size: " + centerPanel.getPreferredSize());
 
             // === Row A ===
-            int rowAHeight = (int) (frameHeight * 0.15);
+            int rowAHeight = (int) Math.round(frameHeight * 0.15);
             rowACenter.setPreferredSize(new Dimension(centerPanelWidth, rowAHeight));
             rowACenter.setMinimumSize(rowACenter.getPreferredSize());
 
@@ -573,8 +693,8 @@ public class CookieClickerLayoutColored extends JFrame {
             rowBCenter.setMinimumSize(rowBCenter.getPreferredSize());
 
             // === Row A Columns ===
-            int rowAColumnAWidth = (int) (centerPanelWidth * 0.16875);
-            int rowAColumnBWidth = (int) (centerPanelWidth * 0.6625);
+            int rowAColumnAWidth = (int) Math.round(centerPanelWidth * 0.16875);
+            int rowAColumnBWidth = (int) Math.round(centerPanelWidth * 0.6625);
 
             column1A.setPreferredSize(new Dimension(rowAColumnAWidth, rowAHeight));
             column1A.setMinimumSize(column1A.getPreferredSize());
@@ -588,12 +708,21 @@ public class CookieClickerLayoutColored extends JFrame {
             column3A.setMinimumSize(column3A.getPreferredSize());
             column3A.setMaximumSize(column3A.getPreferredSize());
 
+            System.out.println("Frame w: " + frameWidth);
+            System.out.println("Centerpanel w: " + frameWidth);
+            System.out.println("Frame h: " + frameHeight);
+            System.out.println("Centerpanel h: " + centerPanelWidth);
+            System.out.println("column1A preferred size: " + column1A.getPreferredSize());
+            System.out.println("column2A preferred size: " + column2A.getPreferredSize());
+            System.out.println("column3A preferred size: " + column3A.getPreferredSize());
+
             // === Row A Buttons ===
             int rowAButtonWidth = rowAColumnAWidth;
             int rowAButtonHeight = (int) (frameHeight * 0.075);
             for (JButton btn : firstRowButtons) {
                 btn.setPreferredSize(new Dimension(rowAButtonWidth, rowAButtonHeight));
                 btn.setMaximumSize(new Dimension(rowAButtonWidth, rowAButtonHeight));
+                System.out.println("column preferred size: " + btn.getPreferredSize());
             }
 
             // === Row B Panels ===
@@ -604,18 +733,22 @@ public class CookieClickerLayoutColored extends JFrame {
 
             row1B.setPreferredSize(new Dimension(rowBWidth, rowBrowAHeight));
             row1B.setMaximumSize(row1B.getPreferredSize());
+            System.out.println("row1B preferred size: " + row1B.getPreferredSize());
 
             row2B.setPreferredSize(new Dimension(rowBWidth, rowBrowBHeight));
             row2B.setMaximumSize(row2B.getPreferredSize());
 
             row3B.setPreferredSize(new Dimension(rowBWidth, rowBrowAHeight));
             row3B.setMaximumSize(row3B.getPreferredSize());
+            System.out.println("row3B preferred size: " + row3B.getPreferredSize());
 
             row4B.setPreferredSize(new Dimension(rowBWidth, rowBrowAHeight));
             row4B.setMaximumSize(row4B.getPreferredSize());
+            System.out.println("row4B preferred size: " + row4B.getPreferredSize());
 
             row5B.setPreferredSize(new Dimension(rowBWidth, rowBrowCHeight));
             row5B.setMaximumSize(row5B.getPreferredSize());
+            System.out.println("row5B preferred size: " + row5B.getPreferredSize());
 
             // === Action Button in Row 2 ===
             int row2BButtonWidth = (int) (rowBWidth * 0.9);
@@ -638,16 +771,17 @@ public class CookieClickerLayoutColored extends JFrame {
 
             Color fontColor = Color.WHITE;
             Color fontColor2 = new Color(0x4c2308);
+            Color fontColor3 = new Color(0x662c0c);
 
             labelrow1B.setFont(scaledFont2);
             cookieCountLabel.setFont(scaledFont2);
             cookieUnitLabel.setFont(scaledFont2);
             cpsLabel.setFont(scaledFont3);
 
-            labelrow1B.setForeground(fontColor);
-            cookieCountLabel.setForeground(fontColor2);
-            cookieUnitLabel.setForeground(fontColor2);
-            cpsLabel.setForeground(fontColor2);
+            labelrow1B.setForeground(fontColor3);
+            cookieCountLabel.setForeground(fontColor);
+            cookieUnitLabel.setForeground(fontColor);
+            cpsLabel.setForeground(fontColor);
 
             actionButtonrow2B.setFont(scaledFont2);
             actionButtonrow2B.setForeground(fontColor);
@@ -691,10 +825,44 @@ public class CookieClickerLayoutColored extends JFrame {
         gen1.setOpaque(true);
         gen1.setBackground(new Color(0xEAE77D));
 
-        JButton gen2 = new JButton("1"); gen2.addActionListener(e -> {Global.setQuantity(1);});
-        JButton gen3 = new JButton("10"); gen3.addActionListener(e -> {Global.setQuantity(10);});
-        JButton gen4 = new JButton("100"); gen4.addActionListener(e -> {Global.setQuantity(100);});
-        JButton gen5 = new JButton("S"); // no sell mode  yet
+        JToggleButton gen2 = new JToggleButton("1");
+        JToggleButton gen3 = new JToggleButton("10");
+        JToggleButton gen4 = new JToggleButton("100");
+
+        ButtonGroup quantityGroup = new ButtonGroup();
+        quantityGroup.add(gen2);
+        quantityGroup.add(gen3);
+        quantityGroup.add(gen4);
+
+        Color selectedColor = new Color(0xC1FF72); // light green
+        Color defaultColor = new Color(0xEAE77D);  // your base yellow
+
+        ActionListener quantityListener = e -> {
+            AbstractButton source = (AbstractButton) e.getSource();
+
+            // Set Global quantity
+            if (source == gen2) Global.setQuantity(1);
+            else if (source == gen3) Global.setQuantity(10);
+            else if (source == gen4) Global.setQuantity(100);
+
+            // Update background colors
+            gen2.setBackground(gen2.isSelected() ? selectedColor : defaultColor);
+            gen3.setBackground(gen3.isSelected() ? selectedColor : defaultColor);
+            gen4.setBackground(gen4.isSelected() ? selectedColor : defaultColor);
+        };
+
+        gen2.addActionListener(quantityListener);
+        gen3.addActionListener(quantityListener);
+        gen4.addActionListener(quantityListener);
+
+        JButton gen5 = new JButton("S"); // no sell mode yet
+        gen5.addActionListener(e -> {
+            if (gen1.getText().equalsIgnoreCase("Buy")) {
+                gen1.setText("Sell");
+            } else {
+                gen1.setText("Buy");
+            }
+        });
 
         gen2.setBackground(new Color(0xEAE77D));
         gen3.setBackground(new Color(0xEAE77D));
@@ -703,9 +871,9 @@ public class CookieClickerLayoutColored extends JFrame {
 
         // Add to tracking lists
         genLabel.add(gen1);
-        genButtons.add(gen2);
-        genButtons.add(gen3);
-        genButtons.add(gen4);
+        genToggleButtons.add(gen2);
+        genToggleButtons.add(gen3);
+        genToggleButtons.add(gen4);
         genButtons.add(gen5);
 
         // Wrap each component in its own JPanel (needed for consistent sizing)
@@ -750,17 +918,21 @@ public class CookieClickerLayoutColored extends JFrame {
         addComponentListener(new ComponentAdapter() {
             @Override
             public void componentResized(ComponentEvent e) {
-                int frameWidth = getWidth();
-                int frameHeight = getHeight();
+                int frameWidth = (getWidth() - 16);
+                int frameHeight = (getHeight() + 24);
 
                 int panelWidth = (int) (frameWidth * 0.25);  // 25% width of frame
                 int rowAHeight = (int) (frameHeight * 0.1125); // 11.25%
                 int rowBHeight = (int) (frameHeight * 0.15);   // 15%
                 int rowCHeight = (int) (frameHeight * 0.05);   // 5%
                 int rowDHeight = (int) (frameHeight * 0.6875); // Remaining (100 - sum above)
+                
+                
 
                 // Set panel & row sizes
                 eastPanel.setPreferredSize(new Dimension(panelWidth, frameHeight));
+                System.out.println("eastPanel preferred size: " + centerPanel.getPreferredSize());
+
                 rowAEast.setPreferredSize(new Dimension(panelWidth, rowAHeight));
                 rowBEast.setPreferredSize(new Dimension(panelWidth, rowBHeight));
                 rowCEast.setPreferredSize(new Dimension(panelWidth, rowCHeight));
@@ -811,6 +983,9 @@ public class CookieClickerLayoutColored extends JFrame {
 
                 eastPanel.revalidate();
                 eastPanel.repaint();
+                System.out.println("westPanel bounds: " + westPanel.getBounds());
+                System.out.println("centerPanel bounds: " + centerPanel.getBounds());
+                System.out.println("eastPanel bounds: " + eastPanel.getBounds());
             }
         });
 
@@ -832,6 +1007,7 @@ public class CookieClickerLayoutColored extends JFrame {
         floatingLabelTimer.start();
 
         setVisible(true);
+        
     }
 
     // Method to add an upgrade to the UI
@@ -969,57 +1145,27 @@ public class CookieClickerLayoutColored extends JFrame {
     }
     
     // Method to update the display with current game state
-    private void updateDisplay() {
+        private void updateDisplay() {
         double amount = gamestate.getAmount();
         double cps = gamestate.GetCPS();
-        
-        // Format the numbers for display
-        String formattedAmount = formatNumber(amount);
-        String unit = getUnit(amount);
-        String formattedCPS = formatNumber(cps);
-        String cpsUnit = getUnit(cps);
-        
+
+        // Format the numbers for display using NumberFormatter
+        String formattedAmount = NumberFormatter.formatNumber(amount);
+        String unit = NumberFormatter.getUnit(amount);
+        String formattedCPS = NumberFormatter.formatNumber(cps);
+        String cpsUnit = NumberFormatter.getUnit(cps);
+
         // Update the labels
         cookieCountLabel.setText(formattedAmount);
         cookieUnitLabel.setText(unit + " Cookies");
         cpsLabel.setText(formattedCPS + " " + cpsUnit + " per second");
-        
+
         // Update upgrade buttons
         for (int i = 0; i < upgrades.size(); i++) {
             if (i < upgradeButtons.size()) {
                 // Update visibility and appearance based on cookie count
                 updateUpgradeVisibility(i, amount);
             }
-        }
-    }
-    
-    // Helper method to format large numbers
-    private String formatNumber(double number) {
-        if (number < 100000) {
-            return formatter1.format(number);
-        } else if (number < 1000000) {
-            return formatter2.format(number / 1000);
-        } else if (number < 1000000000) {
-            return formatter3.format(number / 1000000);
-        } else if (number < 1000000000000L) {
-            return formatter3.format(number / 1000000000);
-        } else {
-            return formatter3.format(number / 1000000000000L);
-        }
-    }
-    
-    // Helper method to get the unit for large numbers
-    private String getUnit(double number) {
-        if (number < 100000) {
-            return "";
-        } else if (number < 1000000) {
-            return "Thousand";
-        } else if (number < 1000000000) {
-            return "Million";
-        } else if (number < 1000000000000L) {
-            return "Billion";
-        } else {
-            return "Trillion";
         }
     }
 

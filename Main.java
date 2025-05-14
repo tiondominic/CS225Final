@@ -1,9 +1,9 @@
 public class Main {
     public static void main(String[] args) {
-        Gamestate gamestate = new Gamestate(0); 
+        Gamestate gamestate = new Gamestate(10000000); 
         GameTick gameTick = new GameTick(gamestate);
 
-        CookieClickerLayoutColored mainwindow = new CookieClickerLayoutColored(gamestate);
+        Gamewindow mainwindow = new Gamewindow(gamestate);
         
         // Add upgrades to the UI
         Upgrade cursor = new Upgrade("Cursor", 15, 0.1, gamestate, false);
