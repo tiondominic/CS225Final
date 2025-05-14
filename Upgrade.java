@@ -37,6 +37,9 @@ public class Upgrade {
         owned -= quantity;
 
         double totalCPS = baseCPS * owned;
+        for(int i=1; i <= quantity; i++){
+            baseCost = baseCost/multiplier;
+        }
 
         gamestate.receive(name, totalCPS);
     }
@@ -50,9 +53,10 @@ public class Upgrade {
     }
 
     public double getSellValue(int quantity) {
+
         double value = 0;
         for (int i = 0; i < quantity; i++) {
-            value += baseCost * Math.pow(multiplier, owned - i - 1);
+            value += baseCost * Math.pow(multiplier, i);
         }
         return value * 0.9;
     }
