@@ -1,6 +1,6 @@
 public class Upgrade {
     private final String name;
-    private final double baseCost;
+    private double baseCost;
     private int owned;
     private final double baseCPS;
     private final double multiplier;
@@ -17,13 +17,18 @@ public class Upgrade {
         this.CursorUpgrade = CursorUpgrade;
     }
 
-    public void buy(int quantity){
-        double totalCPS = baseCPS * (owned + quantity);
-        owned += quantity;
+    public void buy(int Quantity){
+        owned += Quantity;
+        double totalCPS = baseCPS * owned;
 
+        for(int i=1; i <= Quantity; i++){
+            baseCost = baseCost*multiplier;
+        }
+        
         if(CursorUpgrade){
             gamestate.upgradeClick(baseCPS);
-        } else {
+        }
+        else{
             gamestate.receive(name, totalCPS);
         }
     }
@@ -37,11 +42,11 @@ public class Upgrade {
     }
 
     public double getCost(int quantity) {
-        double cost = 0;
+        double totalCost = 0;
         for (int i = 0; i < quantity; i++) {
-            cost += baseCost * Math.pow(multiplier, owned + i);
+            totalCost += baseCost * Math.pow(multiplier, i); 
         }
-        return cost;
+        return totalCost;
     }
 
     public double getSellValue(int quantity) {
