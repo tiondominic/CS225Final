@@ -1,13 +1,20 @@
+import java.util.HashMap;
+
 public class Gamestate {
     private double CPStotal;
     private double clickPWR;
     public double amount;
+    private HashMap<String, Double> items = new HashMap<>();
+    private HashMap<String, Double> TotalCPS = new HashMap<>();
     
     public Gamestate(double CPS){
         this.CPStotal = CPS;
         this.amount = 0;
         this.clickPWR = 1;
-        
+        this.items = new HashMap<>();
+        this.TotalCPS = new HashMap<>();
+
+        TotalCPS.put("StartingCPS", CPS);
     }
 
     public void upgradeClick(double a){
@@ -26,11 +33,27 @@ public class Gamestate {
         amount += clickPWR;
     }
 
-    public void receive(double a){
-        CPStotal += a;
+    public double getClickingPower() {
+        return clickPWR;
+    }
+
+    public void receive(String name, double CPS){
+        items.put(name, CPS);
+
+        double Sum = 0;
+        for (double itemCPS : items.values()) {
+            Sum += itemCPS;
+        }
+
+        TotalCPS.put("CPSupgrades", Sum);
     }
 
     public double GetCPS(){
+        double Sum = 0;
+        for (double itemCPS : TotalCPS.values()) {
+            Sum += itemCPS;
+        }
+        CPStotal = Sum;
         return CPStotal;
     }
 
@@ -38,13 +61,30 @@ public class Gamestate {
         amount -= a;
     }
 
-    public boolean tryBuyUpgrade(Upgrade upgrade) {
-        double cost = upgrade.getCost();
-        if (amount >= cost) {
-            amount -= cost;
-            upgrade.buy();
-            return true;
+    public boolean Transact(Upgrade upgrade, int Quantity, String Mode) {
+        double cost = upgrade.getCost(Quantity);
+
+        if (Mode.equalsIgnoreCase("BUY")) {
+            if (amount >= cost) {
+                amount -= cost;
+                upgrade.buy(Quantity);
+                return true;
+            }
+            return false;
         }
+
+        if (Mode.equalsIgnoreCase("SELL")) {
+            if (Quantity <= upgrade.getOwned()) {
+                double refund = upgrade.getSellValue(Quantity);
+                upgrade.sell(Quantity);
+                amount += refund;
+
+                System.out.println("Sold " + Quantity + "x " + upgrade.getName() + " for a refund of " + refund);
+                
+                return true;
+            }
+        }
+
         return false;
     }
 }   
