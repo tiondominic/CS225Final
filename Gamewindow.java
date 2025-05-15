@@ -344,9 +344,9 @@ public class Gamewindow extends JFrame {
     private JLabel cookieCountLabel;
     private JLabel cookieUnitLabel;
     private JLabel cpsLabel;
-    private JPanel availablePanel;
-    private int upgradeBtnWidth;
-    private int upgradeBtnHeight;
+    private JPanel rowDEast;
+    private int upgradeButtonWidth;
+    private int upgradeButtonHeight;
     private List<JPanel> upgradeWrappers = new ArrayList<>();
     private List<UpgradePanel> upgradePanels = new ArrayList<>();
     private final List<FloatingLabel> floatingLabels = new ArrayList<>();
@@ -387,22 +387,20 @@ public class Gamewindow extends JFrame {
         setSize(width, height);
         setLocationRelativeTo(null); // Centers the window
 
-        // Calculate initial button sizes
-        upgradeBtnWidth = (int) (width * 0.25);
-        upgradeBtnHeight = (int) (height * 0.1);
-
         setLayout(new BorderLayout());
 
         // === WEST PANEL (LEFT) ===
         JPanel westPanel = new JPanel();
         westPanel.setLayout(new BoxLayout(westPanel, BoxLayout.Y_AXIS));
-        westPanel.setBackground(Color.LIGHT_GRAY);
+        westPanel.setBackground(new Color(0xFFFFFF));
 
         // === Row A (Title) ===
-        JLabel westTitle = new JLabel("UPGRADES", SwingConstants.CENTER);
-        JPanel rowAWest = new JPanel(new BorderLayout());
+        Image WestbgImage1 = new ImageIcon("assets/west_row1.png").getImage();  // Load your background image
+        JPanel rowAWest = new ImageBackgroundPanel(WestbgImage1);  // Use the custom panel
         rowAWest.setBackground(new Color(0x39B539));
-        rowAWest.add(westTitle, BorderLayout.CENTER);
+        rowAWest.setOpaque(false);
+        rowAWest.setLayout(new GridBagLayout());  // Add proper layout manager
+        
         westPanel.add(rowAWest);
 
         // === Row B (3 + 5 Buttons) ===
@@ -503,12 +501,15 @@ public class Gamewindow extends JFrame {
 
         // === 1st Row (Header) ===
 
-        Image bgImage0 = new ImageIcon("assets/center_rowACenter.png").getImage();  // Load your background image
+        Image bgImage0 = new ImageIcon("assets/center_rowACenter_1.png").getImage();  // Load your background image
         JPanel rowACenter = new ImageBackgroundPanel(bgImage0);  // Use the custom panel
         rowACenter.setLayout(new BoxLayout(rowACenter, BoxLayout.X_AXIS));
         rowACenter.setBackground(new Color(0xDBD221));
         rowACenter.setOpaque(false);
         centerRows.add(rowACenter);
+
+        int horizontalPadding1 = (int) (screenSize.width * 0.014);
+        rowACenter.add(Box.createHorizontalStrut(horizontalPadding1));  // or any pixel value you want
 
         // === Column 1 (2 Buttons) ===
         JPanel column1A = new JPanel();
@@ -516,6 +517,7 @@ public class Gamewindow extends JFrame {
         column1A.setBackground(new Color(0xA7EAA7));
         column1A.setOpaque(false);
         rowACenter.add(column1A);
+
 
         Image staticButtonImage1 = new ImageIcon("assets/center_row1_columnA1.png").getImage();
         StaticImageButton column1AButton1 = new StaticImageButton("Options", staticButtonImage1);
@@ -544,7 +546,7 @@ public class Gamewindow extends JFrame {
 
         // === 2nd Row (Content) ===
         // We'll use a panel with BoxLayout for the second row
-        Image bgImage2 = new ImageIcon("assets/center_row1_columnB.png").getImage();  // Load your background image
+        Image bgImage2 = new ImageIcon("assets/center_row1_columnB1.png").getImage();  // Load your background image
         JPanel column2A = new ImageBackgroundPanel(bgImage2);  // Use the custom panel
         column2A.setBackground(new Color(0xE59C9C));
         column2A.setOpaque(false);
@@ -556,6 +558,9 @@ public class Gamewindow extends JFrame {
         column3A.setBackground(new Color(0xA7EAA7));
         column3A.setOpaque(false);
         rowACenter.add(column3A);
+
+        int horizontalPadding2 = (int) (screenSize.width * 0.017);
+        rowACenter.add(Box.createHorizontalStrut(horizontalPadding2));  // or any pixel value you want
 
         // Button 3
         Image staticButtonImage3 = new ImageIcon("assets/center_row1_columnC1.png").getImage();
@@ -768,7 +773,7 @@ public class Gamewindow extends JFrame {
 
             // === Row A Columns ===
             int rowAColumnAWidth = (int) Math.round(centerPanelWidth * 0.16875);
-            int rowAColumnBWidth = (int) Math.round(centerPanelWidth * 0.6625);
+            int rowAColumnBWidth = (int) Math.round(centerPanelWidth * 0.6065);
 
             column1A.setPreferredSize(new Dimension(rowAColumnAWidth, rowAHeight));
             column1A.setMinimumSize(column1A.getPreferredSize());
@@ -802,7 +807,6 @@ public class Gamewindow extends JFrame {
             // === Row B Panels ===
             int rowBrowAHeight = (int) (frameHeight * 0.075);
             int rowBrowBHeight = (int) (frameHeight * 0.475);
-            int rowBrowCHeight = (int) (frameHeight * 0.0375);
             int rowBWidth = (int) (centerPanelWidth * 0.6625);
 
             row1B.setPreferredSize(new Dimension(rowBWidth, rowBrowAHeight));
@@ -823,15 +827,6 @@ public class Gamewindow extends JFrame {
             row5B.setPreferredSize(new Dimension(rowBWidth, rowBrowAHeight));
             row5B.setMaximumSize(row5B.getPreferredSize());
             System.out.println("row5B preferred size: " + row5B.getPreferredSize());
-
-            int totalChildrenHeight = 0;
-            for (Component c : rowBCenter.getComponents()) {
-                Dimension d = c.getPreferredSize();
-                System.out.println("Child: " + c + " pref height: " + d.height);
-                totalChildrenHeight += d.height;
-            }
-            System.out.println("Sum of children preferred heights: " + totalChildrenHeight);
-            System.out.println("rowBCenter preferred height: " + rowBCenter.getPreferredSize().height);
 
             // === Name Button in Row 2 ===
             row1BButton.setPreferredSize(new Dimension(rowBWidth, rowBrowAHeight));
@@ -881,24 +876,84 @@ public class Gamewindow extends JFrame {
         // === EAST PANEL (RIGHT) ===
         JPanel eastPanel = new JPanel();
         eastPanel.setLayout(new BoxLayout(eastPanel, BoxLayout.Y_AXIS));
-        eastPanel.setBackground(Color.LIGHT_GRAY);
+        eastPanel.setBackground(new Color(0xFFFFFF));
 
         // === Row A (Title) ===
-        JLabel eastTitle = new JLabel("STORE", SwingConstants.CENTER);
-        JPanel rowAEast = new JPanel(new BorderLayout());
+        Image EastbgImage1 = new ImageIcon("assets/east_row1.png").getImage();  // Load your background image
+        JPanel rowAEast = new ImageBackgroundPanel(EastbgImage1);  // Use the custom panel
         rowAEast.setBackground(new Color(0x39B539));
-        rowAEast.add(eastTitle, BorderLayout.CENTER);
+        rowAEast.setOpaque(false);
+        rowAEast.setLayout(new GridBagLayout());  // Add proper layout manager
         eastPanel.add(rowAEast);
 
-        // === Row B (2 rows x 5 columns) ===
-        JPanel rowBEast = new JPanel(new GridLayout(2, 5));
-        rowBEast.setBackground(new Color(0xA7EAA7));
-        for (int i = 0; i < 10; i++) {
-            JButton tool = new JButton("Tool " + (i + 1));
-            tool.setBackground(new Color(0xEAE77D));
-            toolButtons.add(tool);
-            rowBEast.add(tool);
-        }
+        // === Row B (2 rows x 5 columns using BoxLayout) ===
+        JPanel rowBEast = new JPanel();
+        rowBEast.setLayout(new BoxLayout(rowBEast, BoxLayout.Y_AXIS));
+        rowBEast.setBackground(new Color(0x601818));
+
+        // === First row of upgrades ===
+        JPanel upgradeRow1 = new JPanel();
+        upgradeRow1.setLayout(new BoxLayout(upgradeRow1, BoxLayout.X_AXIS));
+        upgradeRow1.setOpaque(false);
+
+        JButton upgrade1 = new JButton("Upgrade 1");
+        JButton upgrade2 = new JButton("Upgrade 2");
+        JButton upgrade3 = new JButton("Upgrade 3");
+        JButton upgrade4 = new JButton("Upgrade 4");
+        JButton upgrade5 = new JButton("Upgrade 5");
+
+        upgrade1.setBackground(new Color(0xEAE77D));
+        upgrade2.setBackground(new Color(0xEAE77D));
+        upgrade3.setBackground(new Color(0xEAE77D));
+        upgrade4.setBackground(new Color(0xEAE77D));
+        upgrade5.setBackground(new Color(0xEAE77D));
+
+        toolButtons.add(upgrade1);
+        toolButtons.add(upgrade2);
+        toolButtons.add(upgrade3);
+        toolButtons.add(upgrade4);
+        toolButtons.add(upgrade5);
+
+        upgradeRow1.add(upgrade1);
+        upgradeRow1.add(upgrade2);
+        upgradeRow1.add(upgrade3);
+        upgradeRow1.add(upgrade4);
+        upgradeRow1.add(upgrade5);
+
+        // === Second row of upgrades ===
+        JPanel upgradeRow2 = new JPanel();
+        upgradeRow2.setLayout(new BoxLayout(upgradeRow2, BoxLayout.X_AXIS));
+        upgradeRow2.setOpaque(false);
+
+        JButton upgrade6 = new JButton("Upgrade 6");
+        JButton upgrade7 = new JButton("Upgrade 7");
+        JButton upgrade8 = new JButton("Upgrade 8");
+        JButton upgrade9 = new JButton("Upgrade 9");
+        JButton upgrade10 = new JButton("Upgrade 10");
+
+        upgrade6.setBackground(new Color(0xEAE77D));
+        upgrade7.setBackground(new Color(0xEAE77D));
+        upgrade8.setBackground(new Color(0xEAE77D));
+        upgrade9.setBackground(new Color(0xEAE77D));
+        upgrade10.setBackground(new Color(0xEAE77D));
+
+        toolButtons.add(upgrade6);
+        toolButtons.add(upgrade7);
+        toolButtons.add(upgrade8);
+        toolButtons.add(upgrade9);
+        toolButtons.add(upgrade10);
+
+        upgradeRow2.add(upgrade6);
+        upgradeRow2.add(upgrade7);
+        upgradeRow2.add(upgrade8);
+        upgradeRow2.add(upgrade9);
+        upgradeRow2.add(upgrade10);
+
+        // Add both rows to main panel
+        rowBEast.add(upgradeRow1);
+        rowBEast.add(upgradeRow2);
+
+        // Add to east panel
         eastPanel.add(rowBEast);
 
         // === Row C (1 row x 5 columns with different widths) ===
@@ -907,18 +962,18 @@ public class Gamewindow extends JFrame {
         rowCEast.setBackground(new Color(0xA7EAA7));
 
         // Create label and buttons
-        JLabel gen1 = new JLabel("Buy", SwingConstants.CENTER);
-        gen1.setOpaque(true);
-        gen1.setBackground(new Color(0xEAE77D));
+        JLabel rowCEast_column1 = new JLabel("Buy", SwingConstants.CENTER);
+        rowCEast_column1.setOpaque(true);
+        rowCEast_column1.setBackground(new Color(0xEAE77D));
 
-        JToggleButton gen2 = new JToggleButton("1");
-        JToggleButton gen3 = new JToggleButton("10");
-        JToggleButton gen4 = new JToggleButton("100");
+        JToggleButton rowCEast_column2 = new JToggleButton("1");
+        JToggleButton rowCEast_column3 = new JToggleButton("10");
+        JToggleButton rowCEast_column4 = new JToggleButton("100");
 
         ButtonGroup quantityGroup = new ButtonGroup();
-        quantityGroup.add(gen2);
-        quantityGroup.add(gen3);
-        quantityGroup.add(gen4);
+        quantityGroup.add(rowCEast_column2);
+        quantityGroup.add(rowCEast_column3);
+        quantityGroup.add(rowCEast_column4);
 
         Color selectedColor = new Color(0xC1FF72); // light green
         Color defaultColor = new Color(0xEAE77D);  // your base yellow
@@ -927,77 +982,78 @@ public class Gamewindow extends JFrame {
             AbstractButton source = (AbstractButton) e.getSource();
 
             // Set Global quantity
-            if (source == gen2) Global.setQuantity(1);
-            else if (source == gen3) Global.setQuantity(10);
-            else if (source == gen4) Global.setQuantity(100);
+            if (source == rowCEast_column2) Global.setQuantity(1);
+            else if (source == rowCEast_column3) Global.setQuantity(10);
+            else if (source == rowCEast_column4) Global.setQuantity(100);
 
             // Update background colors
-            gen2.setBackground(gen2.isSelected() ? selectedColor : defaultColor);
-            gen3.setBackground(gen3.isSelected() ? selectedColor : defaultColor);
-            gen4.setBackground(gen4.isSelected() ? selectedColor : defaultColor);
+            rowCEast_column2.setBackground(rowCEast_column2.isSelected() ? selectedColor : defaultColor);
+            rowCEast_column3.setBackground(rowCEast_column3.isSelected() ? selectedColor : defaultColor);
+            rowCEast_column4.setBackground(rowCEast_column4.isSelected() ? selectedColor : defaultColor);
         };
 
-        gen2.addActionListener(quantityListener);
-        gen3.addActionListener(quantityListener);
-        gen4.addActionListener(quantityListener);
+        rowCEast_column2.addActionListener(quantityListener);
+        rowCEast_column3.addActionListener(quantityListener);
+        rowCEast_column4.addActionListener(quantityListener);
 
-        JButton gen5 = new JButton("S"); // no sell mode yet
-        gen5.addActionListener(e -> {
-            if (gen1.getText().equalsIgnoreCase("Buy")) {
-                gen1.setText("Sell");
+        JButton rowCEast_column5 = new JButton("S");
+        rowCEast_column5.addActionListener(e -> {
+            if (rowCEast_column1.getText().equalsIgnoreCase("Buy")) {
+                rowCEast_column1.setText("Sell");
                 Global.setMode("SELL");
             } else {
-                gen1.setText("Buy");
+                rowCEast_column1.setText("Buy");
                 Global.setMode("BUY");
             }
         });
 
-        gen2.setBackground(new Color(0xEAE77D));
-        gen3.setBackground(new Color(0xEAE77D));
-        gen4.setBackground(new Color(0xEAE77D));
-        gen5.setBackground(new Color(0xEAE77D));
+        rowCEast_column2.setBackground(new Color(0xEAE77D));
+        rowCEast_column3.setBackground(new Color(0xEAE77D));
+        rowCEast_column4.setBackground(new Color(0xEAE77D));
+        rowCEast_column5.setBackground(new Color(0xEAE77D));
 
         // Add to tracking lists
-        genLabel.add(gen1);
-        genToggleButtons.add(gen2);
-        genToggleButtons.add(gen3);
-        genToggleButtons.add(gen4);
-        genButtons.add(gen5);
+        genLabel.add(rowCEast_column1);
+        genToggleButtons.add(rowCEast_column2);
+        genToggleButtons.add(rowCEast_column3);
+        genToggleButtons.add(rowCEast_column4);
+        genButtons.add(rowCEast_column5);
 
         // Wrap each component in its own JPanel (needed for consistent sizing)
-        JPanel gen1Wrapper = new JPanel(new BorderLayout());
-        JPanel gen2Wrapper = new JPanel(new BorderLayout());
-        JPanel gen3Wrapper = new JPanel(new BorderLayout());
-        JPanel gen4Wrapper = new JPanel(new BorderLayout());
-        JPanel gen5Wrapper = new JPanel(new BorderLayout());
+        JPanel rowCEast_column1_wrapper = new JPanel(new BorderLayout());
+        JPanel rowCEast_column2_wrapper = new JPanel(new BorderLayout());
+        JPanel rowCEast_column3_wrapper = new JPanel(new BorderLayout());
+        JPanel rowCEast_column4_wrapper = new JPanel(new BorderLayout());
+        JPanel rowCEast_column5_wrapper = new JPanel(new BorderLayout());
 
-        gen1Wrapper.add(gen1, BorderLayout.CENTER);
-        gen2Wrapper.add(gen2, BorderLayout.CENTER);
-        gen3Wrapper.add(gen3, BorderLayout.CENTER);
-        gen4Wrapper.add(gen4, BorderLayout.CENTER);
-        gen5Wrapper.add(gen5, BorderLayout.CENTER);
+        rowCEast_column1_wrapper.add(rowCEast_column1, BorderLayout.CENTER);
+        rowCEast_column2_wrapper.add(rowCEast_column2, BorderLayout.CENTER);
+        rowCEast_column3_wrapper.add(rowCEast_column3, BorderLayout.CENTER);
+        rowCEast_column4_wrapper.add(rowCEast_column4, BorderLayout.CENTER);
+        rowCEast_column5_wrapper.add(rowCEast_column5, BorderLayout.CENTER);
 
         // Add wrappers to Row C
-        rowCEast.add(gen1Wrapper);
-        rowCEast.add(gen2Wrapper);
-        rowCEast.add(gen3Wrapper);
-        rowCEast.add(gen4Wrapper);
-        rowCEast.add(gen5Wrapper);
+        rowCEast.add(rowCEast_column1_wrapper);
+        rowCEast.add(rowCEast_column2_wrapper);
+        rowCEast.add(rowCEast_column3_wrapper);
+        rowCEast.add(rowCEast_column4_wrapper);
+        rowCEast.add(rowCEast_column5_wrapper);
 
         eastPanel.add(rowCEast);
 
         // === Row D (Scrollable available upgrades) ===
-        availablePanel = new JPanel(); // this now assigns to the field
-        availablePanel.setLayout(new BoxLayout(availablePanel, BoxLayout.Y_AXIS));
-        availablePanel.setBackground(new Color(0x7B89C4));
+        rowDEast = new JPanel(); // this now assigns to the field
+        rowDEast.setLayout(new BoxLayout(rowDEast, BoxLayout.Y_AXIS));
+        rowDEast.setBackground(new Color(0x7B89C4));
         
         // We'll populate this in the addUpgrade method
         
-        JScrollPane scrollAvailable = new JScrollPane(availablePanel);
-        scrollAvailable.getViewport().setBackground(new Color(0xE59C9C));
-        JPanel availableWrapper = new JPanel(new BorderLayout());
-        availableWrapper.add(scrollAvailable, BorderLayout.CENTER);
-        eastPanel.add(availableWrapper);
+        JScrollPane scrollableUpgrades = new JScrollPane(rowDEast);
+        scrollableUpgrades.getViewport().setBackground(new Color(0xE59C9C));
+
+        JPanel scrollableUpgradesPanel = new JPanel(new BorderLayout());
+        scrollableUpgradesPanel.add(scrollableUpgrades, BorderLayout.CENTER);
+        eastPanel.add(scrollableUpgradesPanel);
 
         // === Add to Frame ===
         add(eastPanel, BorderLayout.EAST);
@@ -1006,62 +1062,93 @@ public class Gamewindow extends JFrame {
         addComponentListener(new ComponentAdapter() {
             @Override
             public void componentResized(ComponentEvent e) {
-                int frameWidth = (getWidth() - 16);
-                int frameHeight = (getHeight() + 24);
+                int windowWidth = (getWidth() - 16);
+                int windowHeight = (getHeight() + 24);
+                System.out.println("DEBUG WINDOW WIDTH: " + windowWidth);
 
-                int panelWidth = (int) (frameWidth * 0.25);  // 25% width of frame
-                int rowAHeight = (int) (frameHeight * 0.1125); // 11.25%
-                int rowBHeight = (int) (frameHeight * 0.15);   // 15%
-                int rowCHeight = (int) (frameHeight * 0.05);   // 5%
-                int rowDHeight = (int) (frameHeight * 0.6875); // Remaining (100 - sum above)
-                
-                
+                int eastPanelWidth = (int) (windowWidth * 0.25);  // 25% width of frame
+                System.out.println("DEBUG EAST PANEL WIDTH: " + eastPanelWidth);
+                int rowAHeight = (int) (windowHeight * 0.1125); // 11.25%
+                int rowBHeight = (int) (windowHeight * 0.15);   // 15%
+                int rowCHeight = (int) (windowHeight * 0.05);   // 5%
+                int rowDHeight = (int) (windowHeight * 0.6875); // Remaining (100 - sum above)
 
+                int rowBRowsHeight = (int) (rowBHeight * 0.5);
+                
                 // Set panel & row sizes
-                eastPanel.setPreferredSize(new Dimension(panelWidth, frameHeight));
-                System.out.println("eastPanel preferred size: " + centerPanel.getPreferredSize());
+                eastPanel.setPreferredSize(new Dimension(eastPanelWidth, windowHeight));
+                eastPanel.setMinimumSize(eastPanel.getPreferredSize());
+                eastPanel.setMaximumSize(eastPanel.getPreferredSize());
+                System.out.println("[DEBUG] EAST PANEL SIZE: " + eastPanel.getPreferredSize());
 
-                rowAEast.setPreferredSize(new Dimension(panelWidth, rowAHeight));
-                rowBEast.setPreferredSize(new Dimension(panelWidth, rowBHeight));
-                rowCEast.setPreferredSize(new Dimension(panelWidth, rowCHeight));
-                availableWrapper.setPreferredSize(new Dimension(panelWidth, rowDHeight));
+                rowAEast.setPreferredSize(new Dimension(eastPanelWidth, rowAHeight));
+                rowAEast.setMinimumSize(rowAEast.getPreferredSize());
+                rowAEast.setMaximumSize(rowAEast.getPreferredSize());
+
+                rowBEast.setPreferredSize(new Dimension(eastPanelWidth, rowBHeight));
+                rowBEast.setMinimumSize(rowBEast.getPreferredSize());
+                rowBEast.setMaximumSize(rowBEast.getPreferredSize());
+                System.out.println("[DEBUG] ROW B EAST SIZE: " + rowBEast.getPreferredSize());
+
+                upgradeRow1.setPreferredSize(new Dimension(eastPanelWidth, rowBRowsHeight));
+                upgradeRow1.setMinimumSize(upgradeRow1.getPreferredSize());
+                upgradeRow1.setMaximumSize(upgradeRow1.getPreferredSize());
+                System.out.println("[DEBUG] ROW B UPGRADE ROW 1 EAST SIZE: " + upgradeRow1.getPreferredSize());
+
+                upgradeRow2.setPreferredSize(new Dimension(eastPanelWidth, rowBRowsHeight));
+                upgradeRow2.setMinimumSize(upgradeRow2.getPreferredSize());
+                upgradeRow2.setMaximumSize(upgradeRow2.getPreferredSize());
+                System.out.println("[DEBUG] ROW B UPGRADE ROW 2 EAST SIZE: " + upgradeRow2.getPreferredSize());
+
+                rowCEast.setPreferredSize(new Dimension(eastPanelWidth, rowCHeight));
+                rowCEast.setMinimumSize(rowCEast.getPreferredSize());
+                rowCEast.setMaximumSize(rowCEast.getPreferredSize());
+                System.out.println("[DEBUG] ROW C EAST SIZE: " + rowCEast.getPreferredSize());
+
+                scrollableUpgradesPanel.setPreferredSize(new Dimension(eastPanelWidth, rowDHeight));
+                scrollableUpgradesPanel.setMinimumSize(scrollableUpgradesPanel.getPreferredSize());
+                scrollableUpgradesPanel.setMaximumSize(scrollableUpgradesPanel.getPreferredSize());
+                System.out.println("[DEBUG] ROW C EAST SIZE: " + rowCEast.getPreferredSize());
 
                 // Update button size variables
-                upgradeBtnWidth = (int) (frameWidth * 0.25);
-                upgradeBtnHeight = (int) (frameHeight * 0.1);
+                upgradeButtonWidth = (int) (eastPanelWidth);
+                upgradeButtonHeight = (int) (windowHeight * 0.1);
 
                 // Resize upgrade wrappers
                 for (JPanel wrapper : upgradeWrappers) {
-                    wrapper.setPreferredSize(new Dimension(upgradeBtnWidth, upgradeBtnHeight));
-                    wrapper.setMinimumSize(new Dimension(upgradeBtnWidth, upgradeBtnHeight));
+                    wrapper.setPreferredSize(new Dimension(upgradeButtonWidth, upgradeButtonHeight));
+                    wrapper.setMinimumSize(new Dimension(upgradeButtonWidth, upgradeButtonHeight));
                 }
 
-                // Resize tool buttons (Row B)
-                int toolBtnWidth = (int) (frameWidth * 0.25);
-                int toolBtnHeight = (int) (frameHeight * 0.075); // ~8% of height
+                // === Resize Upgrade Buttons in Row B ===
+                int upgradeBtnHeight = (int) (windowHeight * 0.075);  // 7.5% height
+                int upgradeBtnWidth = (int) (eastPanelWidth * 0.2);  // 7.5% height
+
                 for (JButton btn : toolButtons) {
-                    btn.setPreferredSize(new Dimension(toolBtnWidth, toolBtnHeight));
+                    btn.setPreferredSize(new Dimension(upgradeBtnWidth, upgradeBtnHeight));
+                    btn.setMinimumSize(btn.getPreferredSize());
+                    btn.setMaximumSize(btn.getPreferredSize());
                 }
 
                 // Resize gen buttons (Row C) with different widths
-                int totalWidth = panelWidth;
+                int totalWidth = eastPanelWidth;
 
-                int genBtnHeight = (int) (frameHeight * 0.05);
+                int column1to5Height = (int) (windowHeight * 0.05);
 
                 // Calculate widths
-                int gen1Width = (int)(totalWidth * 0.355);
-                int gen2to4Width = (int)(totalWidth * 0.1775);
-                int gen5Width = (int)(totalWidth * 0.1125);
+                int column1Width = (int)(totalWidth * 0.355);
+                int column2to4Width = (int)(totalWidth * 0.1775);
+                int column5Width = (int)(totalWidth * 0.1125);
 
                 // Get wrapper components
                 Component[] wrappers = rowCEast.getComponents();
 
                 // Resize each wrapper
-                wrappers[0].setPreferredSize(new Dimension(gen1Width, genBtnHeight));
-                wrappers[1].setPreferredSize(new Dimension(gen2to4Width, genBtnHeight));
-                wrappers[2].setPreferredSize(new Dimension(gen2to4Width, genBtnHeight));
-                wrappers[3].setPreferredSize(new Dimension(gen2to4Width, genBtnHeight));
-                wrappers[4].setPreferredSize(new Dimension(gen5Width, genBtnHeight));
+                wrappers[0].setPreferredSize(new Dimension(column1Width, column1to5Height));
+                wrappers[1].setPreferredSize(new Dimension(column2to4Width, column1to5Height));
+                wrappers[2].setPreferredSize(new Dimension(column2to4Width, column1to5Height));
+                wrappers[3].setPreferredSize(new Dimension(column2to4Width, column1to5Height));
+                wrappers[4].setPreferredSize(new Dimension(column5Width, column1to5Height));
 
                 for (Component wrapper : wrappers) {
                     wrapper.setMinimumSize(wrapper.getPreferredSize());
@@ -1071,9 +1158,7 @@ public class Gamewindow extends JFrame {
 
                 eastPanel.revalidate();
                 eastPanel.repaint();
-                System.out.println("westPanel bounds: " + westPanel.getBounds());
-                System.out.println("centerPanel bounds: " + centerPanel.getBounds());
-                System.out.println("eastPanel bounds: " + eastPanel.getBounds());
+                
             }
         });
 
@@ -1095,6 +1180,9 @@ public class Gamewindow extends JFrame {
         floatingLabelTimer.start();
 
         setVisible(true);
+        System.out.println("westPanel bounds: " + westPanel.getBounds());
+        System.out.println("centerPanel bounds: " + centerPanel.getBounds());
+        System.out.println("eastPanel bounds: " + eastPanel.getBounds());
         
     }
 
@@ -1117,9 +1205,9 @@ public class Gamewindow extends JFrame {
         upgradeButtons.add(upgradeBtn);
 
         // Set initial size for the button
-        upgradeBtn.setPreferredSize(new Dimension(upgradeBtnWidth, upgradeBtnHeight));
-        upgradeBtn.setMinimumSize(new Dimension(upgradeBtnWidth, upgradeBtnHeight));
-        upgradeBtn.setMaximumSize(new Dimension(upgradeBtnWidth, upgradeBtnHeight));
+        upgradeBtn.setPreferredSize(new Dimension(upgradeButtonWidth, upgradeButtonHeight));
+        upgradeBtn.setMinimumSize(new Dimension(upgradeButtonWidth, upgradeButtonHeight));
+        upgradeBtn.setMaximumSize(new Dimension(upgradeButtonWidth, upgradeButtonHeight));
 
         // Set initial background color
         upgradePanel.setBackground(STAGE1_BG);
@@ -1144,11 +1232,11 @@ public class Gamewindow extends JFrame {
         upgradeWrappers.add(wrapper);
 
         // Add the wrapper to the availablePanel
-        availablePanel.add(wrapper);
+        rowDEast.add(wrapper);
 
         // Make sure the panel is updated
-        availablePanel.revalidate();
-        availablePanel.repaint();
+        rowDEast.revalidate();
+        rowDEast.repaint();
 
         System.out.println("Added upgrade: " + upgrade.getName());
     }
@@ -1305,4 +1393,4 @@ public class Gamewindow extends JFrame {
         getLayeredPane().add(label, JLayeredPane.POPUP_LAYER);
         floatingLabels.add(new FloatingLabel(label));
     }
-}   
+}
