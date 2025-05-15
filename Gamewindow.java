@@ -293,7 +293,6 @@ class RotatingImageButton extends JButton {
 
 class StaticImagePanel extends JPanel {
     private Image backgroundImage;
-    private Image scaledBackgroundImage;
 
     public StaticImagePanel(Image image) {
         this.backgroundImage = image;
@@ -302,21 +301,28 @@ class StaticImagePanel extends JPanel {
 
     public void setImage(Image image) {
         this.backgroundImage = image;
-        this.scaledBackgroundImage = null; // Force rescaling on next paint
         repaint();
     }
 
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
+
         int w = getWidth();
         int h = getHeight();
 
-        if (scaledBackgroundImage == null || scaledBackgroundImage.getWidth(null) != w || scaledBackgroundImage.getHeight(null) != h) {
-            scaledBackgroundImage = backgroundImage.getScaledInstance(w, h, Image.SCALE_FAST);
-        }
+        if (backgroundImage != null) {
+            Graphics2D g2d = (Graphics2D) g.create();
 
-        g.drawImage(scaledBackgroundImage, 0, 0, w, h, this);
+            // High-quality rendering
+            g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            // Stretch image to fill the entire panel (no aspect ratio preservation)
+            g2d.drawImage(backgroundImage, 0, 0, w, h, this);
+            g2d.dispose();
+        }
     }
 }
 
