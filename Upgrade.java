@@ -15,8 +15,7 @@ public class Upgrade {
         this.multiplier = 1.15;
         this.owned = 0;
         this.CursorUpgrade = CursorUpgrade;
-    }   
-    
+    }
 
     public void buy(int Quantity){
         owned += Quantity;
@@ -34,25 +33,15 @@ public class Upgrade {
         }
     }
 
-    public void sell(int Quantity){
-        owned -= Quantity;
+    public void sell(int quantity){
+        owned -= quantity;
 
-        for(int i=1; i <= Quantity; i++){
+        double totalCPS = baseCPS * owned;
+        for(int i=1; i <= quantity; i++){
             baseCost = baseCost/multiplier;
         }
 
-        double totalCPS = baseCPS * owned;
-
         gamestate.receive(name, totalCPS);
-
-    }
-
-    public String getName(){
-        return name;
-    }
-
-    public int getOwned(){
-        return owned;
     }
 
     public double getCost(int quantity) {
@@ -63,7 +52,24 @@ public class Upgrade {
         return totalCost;
     }
 
+    public double getSellValue(int quantity) {
 
+        double value = 0;
+        for (int i = 0; i < quantity; i++) {
+            value += baseCost * Math.pow(multiplier, i);
+        }
+        return value * 0.25;
+    }
+
+    public String getName(){
+        return name;
+    }
+
+    public int getOwned(){
+        return owned;
+    }
+
+    public int getUpgradeOwnedCount(Upgrade upgrade) {
+        return upgrade.getOwned();
+    }
 }
-
-
