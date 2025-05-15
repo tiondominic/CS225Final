@@ -28,6 +28,9 @@ public class Gamestate {
     public double getAmount(){
         return amount;
     }
+    public void goldenClick(double cookieCount){
+        amount += cookieCount;
+    }
 
     public void Click(){
         amount += clickPWR;

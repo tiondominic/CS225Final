@@ -14,7 +14,7 @@ public class Upgrade {
         this.baseCPS = baseCPS;
         this.multiplier = 1.15;
         this.owned = 0;
-        this.CursorUpgrade = CursorUpgrade;
+        this.CursorUpgrade = CursorUpgrade; //maybe get rid of cursor upgrade
     }
 
     public void buy(int Quantity){
