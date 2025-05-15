@@ -382,8 +382,8 @@ public class Gamewindow extends JFrame {
 
         // Set size to 80% width and 80% height of the screen, and center it
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-        int width = (int) (screenSize.width * 0.85);
-        int height = (int) (screenSize.height * 0.82);
+        int width = (int) (screenSize.width * 1);
+        int height = (int) (screenSize.height * 1);
         setSize(width, height);
         setLocationRelativeTo(null); // Centers the window
 
@@ -559,7 +559,7 @@ public class Gamewindow extends JFrame {
         column3A.setOpaque(false);
         rowACenter.add(column3A);
 
-        int horizontalPadding2 = (int) (screenSize.width * 0.017);
+        int horizontalPadding2 = (int) (screenSize.width * 0.014);
         rowACenter.add(Box.createHorizontalStrut(horizontalPadding2));  // or any pixel value you want
 
         // Button 3
@@ -772,8 +772,8 @@ public class Gamewindow extends JFrame {
             rowBCenter.setMinimumSize(rowBCenter.getPreferredSize());
 
             // === Row A Columns ===
-            int rowAColumnAWidth = (int) Math.round(centerPanelWidth * 0.16875);
-            int rowAColumnBWidth = (int) Math.round(centerPanelWidth * 0.6065);
+            int rowAColumnAWidth = (int) (centerPanelWidth * 0.16875);
+            int rowAColumnBWidth = (int) (centerPanelWidth * 0.6065);
 
             column1A.setPreferredSize(new Dimension(rowAColumnAWidth, rowAHeight));
             column1A.setMinimumSize(column1A.getPreferredSize());
@@ -887,8 +887,9 @@ public class Gamewindow extends JFrame {
         eastPanel.add(rowAEast);
 
         // === Row B (2 rows x 5 columns using BoxLayout) ===
-        JPanel rowBEast = new JPanel();
-        rowBEast.setLayout(new BoxLayout(rowBEast, BoxLayout.Y_AXIS));
+        Image rowBEastbgImage = new ImageIcon("assets/east_row2.png").getImage();  // Load your background image
+        JPanel rowBEast = new ImageBackgroundPanel(rowBEastbgImage);  // Use the custom panel
+        rowBEast.setOpaque(false);
         rowBEast.setBackground(new Color(0x601818));
 
         // === First row of upgrades ===
@@ -1065,6 +1066,7 @@ public class Gamewindow extends JFrame {
                 int windowWidth = (getWidth() - 16);
                 int windowHeight = (getHeight() + 24);
                 System.out.println("DEBUG WINDOW WIDTH: " + windowWidth);
+                System.out.println("DEBUG WINDOW HEIGHT: " + windowHeight);
 
                 int eastPanelWidth = (int) (windowWidth * 0.25);  // 25% width of frame
                 System.out.println("DEBUG EAST PANEL WIDTH: " + eastPanelWidth);
