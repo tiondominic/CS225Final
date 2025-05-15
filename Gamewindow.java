@@ -2,10 +2,13 @@ import java.awt.*;
 import java.awt.event.ActionListener;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
+import java.io.File;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 
@@ -31,6 +34,20 @@ class NumberFormatter {
         }
     }
 
+    public static String formatCPS(double number) {
+        if (number < 1000) {
+            return formatter1.format(number); // Always at least one decimal
+        } else if (number < 1_000_000) {
+            return formatter2.format(number / 1000); // Thousand
+        } else if (number < 1_000_000_000) {
+            return formatter3.format(number / 1_000_000); // Million
+        } else if (number < 1_000_000_000_000L) {
+            return formatter3.format(number / 1_000_000_000); // Billion
+        } else {
+            return formatter3.format(number / 1_000_000_000_000L); // Trillion
+        }
+    }
+
     public static String getUnit(double number) {
         if (number < 100000) {
             return "";
@@ -48,6 +65,10 @@ class NumberFormatter {
 
 class StaticImageButton extends JButton {
     private final Image image;
+    private int frameHeight = (getHeight() + 24);
+    private int baseFontSize = (int) (frameHeight * 0.030);
+    private Font baseFont = new Font("Garamond", Font.BOLD, (int) (baseFontSize * 1.3)); // default
+    private double currentScale = 1.0;
 
     public StaticImageButton(String text, Image image) {
         super(text);
@@ -56,35 +77,49 @@ class StaticImageButton extends JButton {
         setBorderPainted(false);
         setFocusPainted(false);
         setOpaque(false);
-        setText(null); // Remove text display
-        setRolloverEnabled(true); // Enable hover
+        setText(null);
+        setRolloverEnabled(true);
+        setLayout(new GridBagLayout()); // allow label centering
+    }
+
+    public void setBaseFont(Font font) {
+        this.baseFont = font;
+        updateLabelFontScale();
+    }
+
+    private void updateLabelFontScale() {
+        for (Component comp : getComponents()) {
+            if (comp instanceof JLabel label) {
+                float newSize = (float) (baseFont.getSize2D() * currentScale);
+                label.setFont(baseFont.deriveFont(newSize));
+            }
+        }
     }
 
     @Override
     protected void paintComponent(Graphics g) {
         Graphics2D g2d = (Graphics2D) g.create();
 
-        // Enable quality rendering
         g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
         g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        // Button state logic
         boolean isPressed = getModel().isArmed() && getModel().isPressed();
         boolean isHovered = getModel().isRollover();
 
-        // Scale factor
-        double scale = 1;
+        double scale = 1.0;
         if (isPressed) {
             scale = 0.8;
         } else if (isHovered) {
             scale = 0.95;
         }
 
+        currentScale = scale;
+        updateLabelFontScale(); // 🔥 Apply animation scale to label text
+
         int buttonWidth = getWidth();
         int buttonHeight = getHeight();
 
-        // Maintain image aspect ratio
         double imgAspect = (double) image.getWidth(null) / image.getHeight(null);
         int drawWidth = (int) (buttonWidth * scale);
         int drawHeight = (int) (drawWidth / imgAspect);
@@ -101,6 +136,7 @@ class StaticImageButton extends JButton {
         g2d.dispose();
     }
 }
+
 
 class ImageButton extends JButton {
     private final Image image;
@@ -180,6 +216,7 @@ class ImageButton extends JButton {
 
 class ImageBackgroundPanel extends JPanel {
     private final Image backgroundImage;
+    private Image scaledBackgroundImage;
 
     public ImageBackgroundPanel(Image image) {
         this.backgroundImage = image;
@@ -189,27 +226,14 @@ class ImageBackgroundPanel extends JPanel {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
+        int w = getWidth();
+        int h = getHeight();
 
-        if (backgroundImage != null) {
-            int panelWidth = getWidth();
-            int panelHeight = getHeight();
-
-            int imgWidth = backgroundImage.getWidth(null);
-            int imgHeight = backgroundImage.getHeight(null);
-
-            if (imgWidth > 0 && imgHeight > 0 && panelWidth > 0 && panelHeight > 0) {
-                // Scale image to fill panel while preserving aspect ratio
-                double scale = Math.max((double) panelWidth / imgWidth, (double) panelHeight / imgHeight);
-                int newWidth = (int) (imgWidth * scale);
-                int newHeight = (int) (imgHeight * scale);
-
-                // Center the image
-                int x = (panelWidth - newWidth) / 2;
-                int y = (panelHeight - newHeight) / 2;
-
-                g.drawImage(backgroundImage, x, y, newWidth, newHeight, this);
-            }
+        if (scaledBackgroundImage == null || scaledBackgroundImage.getWidth(null) != w || scaledBackgroundImage.getHeight(null) != h) {
+            scaledBackgroundImage = backgroundImage.getScaledInstance(w, h, Image.SCALE_SMOOTH);
         }
+
+        g.drawImage(scaledBackgroundImage, 0, 0, w, h, this);
     }
 }
 
@@ -308,6 +332,7 @@ class UpgradePanel extends JPanel {
 public class Gamewindow extends JFrame {
 
     // Example dynamic row counts
+    private final int maxNameLength = 15;
     private int purchasedUpgrades = 10;
     //private int availableUpgrades = 5;
     private Gamestate gamestate;
@@ -476,15 +501,19 @@ public class Gamewindow extends JFrame {
         centerPanel.setBackground(new Color(0xFFFFFF));
 
         // === 1st Row (Header) ===
-        JPanel rowACenter = new JPanel();
+
+        Image bgImage0 = new ImageIcon("assets/center_rowACenter.png").getImage();  // Load your background image
+        JPanel rowACenter = new ImageBackgroundPanel(bgImage0);  // Use the custom panel
         rowACenter.setLayout(new BoxLayout(rowACenter, BoxLayout.X_AXIS));
         rowACenter.setBackground(new Color(0xDBD221));
+        rowACenter.setOpaque(false);
         centerRows.add(rowACenter);
 
         // === Column 1 (2 Buttons) ===
         JPanel column1A = new JPanel();
         column1A.setLayout(new BoxLayout(column1A, BoxLayout.Y_AXIS));
         column1A.setBackground(new Color(0xA7EAA7));
+        column1A.setOpaque(false);
         rowACenter.add(column1A);
 
         Image staticButtonImage1 = new ImageIcon("assets/center_row1_columnA1.png").getImage();
@@ -511,23 +540,20 @@ public class Gamewindow extends JFrame {
         column1A.add(button2Wrapper);
 
         // === Column 2 (Middle Label) ===
-        JPanel column2A = new JPanel(new GridBagLayout());
-        column2A.setBackground(new Color(0xA53A3A));
+
+        // === 2nd Row (Content) ===
+        // We'll use a panel with BoxLayout for the second row
+        Image bgImage2 = new ImageIcon("assets/center_row1_columnB.png").getImage();  // Load your background image
+        JPanel column2A = new ImageBackgroundPanel(bgImage2);  // Use the custom panel
+        column2A.setBackground(new Color(0xE59C9C));
+        column2A.setOpaque(false);
         rowACenter.add(column2A);
-
-        JLabel middleLabel = new JLabel("COOKIE REALMS");
-        middleLabel.setForeground(Color.BLACK);
-        middleLabel.setHorizontalAlignment(SwingConstants.CENTER);
-
-        JPanel labelWrapper = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
-        labelWrapper.setOpaque(false);
-        labelWrapper.add(middleLabel);
-        column2A.add(labelWrapper);
 
         // === Column 3 (2 Buttons) ===
         JPanel column3A = new JPanel();
         column3A.setLayout(new BoxLayout(column3A, BoxLayout.Y_AXIS));
         column3A.setBackground(new Color(0xA7EAA7));
+        column3A.setOpaque(false);
         rowACenter.add(column3A);
 
         // Button 3
@@ -543,7 +569,6 @@ public class Gamewindow extends JFrame {
         column3A.add(button3Wrapper);
 
         // Button 4
-        // Button 3
         Image staticButtonImage4 = new ImageIcon("assets/center_row1_columnC2.png").getImage();
         StaticImageButton column3AButton2 = new StaticImageButton("Options", staticButtonImage4);
         column3AButton2.addActionListener(e -> System.out.println("Button 4 clicked"));
@@ -559,21 +584,57 @@ public class Gamewindow extends JFrame {
 
         // === 2nd Row (Content) ===
         // We'll use a panel with BoxLayout for the second row
-        Image bgImage = new ImageIcon("assets/main_background_3.png").getImage();  // Load your background image
+        Image bgImage = new ImageIcon("assets/main_background_1.png").getImage();  // Load your background image
         JPanel rowBCenter = new ImageBackgroundPanel(bgImage);  // Use the custom panel
         rowBCenter.setBackground(new Color(0xE59C9C));
         centerRows.add(rowBCenter);
 
-        // Row 1 (Text or Label)
-        Image row1BImage = new ImageIcon("assets/center_row2_rowA.png").getImage();  // Load your background image
-        JPanel row1B = new ImageBackgroundPanel(row1BImage);  // Use the custom panel
-        row1B.setLayout(new GridBagLayout());  // Center contents
-        row1B.setBackground(new Color(0xE59C9C));
-        row1B.setAlignmentX(Component.CENTER_ALIGNMENT);
+        int verticalPadding1 = (int) (screenSize.height * 0.0375);
+        rowBCenter.add(Box.createVerticalStrut(verticalPadding1));  // Bottom margin
+
+        // Row 1 (Button with own size)
+        JPanel row1B = new JPanel(new GridBagLayout()); // Instead of default FlowLayout
+        row1B.setBackground(new Color(0, 0, 0, 64)); // 128 = 50% transparency
         row1B.setOpaque(false);
 
-        JLabel labelrow1B = new JLabel("Cookie Clicker" + "\'s " + "Bakery"); //18 Characters Max
-        row1B.add(labelrow1B);
+        // === Create the button with image background ===
+        Image staticButtonImage5 = new ImageIcon("assets/center_row2_rowA.png").getImage();
+        StaticImageButton row1BButton = new StaticImageButton("Options", staticButtonImage5);
+        row1BButton.setLayout(new GridBagLayout());
+
+        // Create constraints for label positioning
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.anchor = GridBagConstraints.CENTER;
+        gbc.insets = new Insets(9, 0, 0, 0); // top, left, bottom, right — pushes label down 10px
+
+        // === Bakery name label ===
+        JLabel bakeryNameLabel = new JLabel("Cookie Clicker’s Bakery");
+        bakeryNameLabel.setForeground(Color.WHITE);
+        bakeryNameLabel.setFont(new Font("Garamond", Font.BOLD, 24)); // <-- Will be updated in resize
+        row1BButton.add(bakeryNameLabel, gbc);
+
+        // === Click to rename logic ===
+        row1BButton.addActionListener(e -> {
+            String input = JOptionPane.showInputDialog(
+                row1BButton,
+                "Enter your bakery's name (max " + maxNameLength + " characters):",
+                bakeryNameLabel.getText().replace("’s Bakery", "")
+            );
+            System.out.println("Button 1 clicked");
+            if (input != null) {
+                input = input.trim();
+                if (!input.isEmpty()) {
+                    if (input.length() > maxNameLength) {
+                        JOptionPane.showMessageDialog(row1BButton, "Name cannot exceed " + maxNameLength + " characters.");
+                        return;
+                    }
+                    bakeryNameLabel.setText(input + "’s Bakery");
+                }
+            }
+        });
+        row1B.add(row1BButton);
         rowBCenter.add(row1B);
         secondRowPanels.add(row1B);
 
@@ -618,6 +679,7 @@ public class Gamewindow extends JFrame {
         gbcBottom.gridy = 0;
         gbcBottom.weighty = 1.0;
         gbcBottom.weightx = 1.0;
+        gbcBottom.insets = new Insets(16, 0, 0, 0); // top, left, bottom, right — pushes label down 10px
         gbcBottom.anchor = GridBagConstraints.SOUTH; // Align to bottom
         gbcBottom.fill = GridBagConstraints.NONE;
 
@@ -628,13 +690,22 @@ public class Gamewindow extends JFrame {
 
         Image row4BImage = new ImageIcon("assets/center_row2_rowD.png").getImage();  // Load your background image
         JPanel row4B = new ImageBackgroundPanel(row4BImage);  // Use the custom panel
-        row4B.setLayout(new GridBagLayout());  // Center contents
+        
         row4B.setBackground(new Color(0xE59C9C));
         row4B.setAlignmentX(Component.CENTER_ALIGNMENT);
         row4B.setOpaque(false);
 
+        row4B.setLayout(new GridBagLayout());  // Center contents
+        GridBagConstraints gbcTop1 = new GridBagConstraints();
+        gbcTop1.gridx = 0;
+        gbcTop1.gridy = 0;
+        gbcTop1.weighty = 1.0;
+        gbcTop1.weightx = 1.0;
+        gbcTop1.anchor = GridBagConstraints.NORTH; // Align to bottom
+        gbcTop1.fill = GridBagConstraints.NONE;
+
         cookieUnitLabel = new JLabel("Cookies");
-        row4B.add(cookieUnitLabel);
+        row4B.add(cookieUnitLabel, gbcTop1);
         rowBCenter.add(row4B);
         secondRowPanels.add(row4B);
 
@@ -651,6 +722,7 @@ public class Gamewindow extends JFrame {
         gbcTop.gridy = 0;
         gbcTop.weighty = 1.0;
         gbcTop.weightx = 1.0;
+        gbcTop.insets = new Insets(0, 0, 20, 0); // top, left, bottom, right — pushes label down 10px
         gbcTop.anchor = GridBagConstraints.NORTH; // Align to top
         gbcTop.fill = GridBagConstraints.NONE;
 
@@ -658,9 +730,12 @@ public class Gamewindow extends JFrame {
         row5B.add(cpsLabel, gbcTop);
         rowBCenter.add(row5B);
         secondRowPanels.add(row5B);
-
-        int verticalPadding2 = (int) (screenSize.height * 0.075);
+        
+        // TO DO: FIX THE SPACINGS LATER, AS OF NOW ITS ACCEPTABLE
+        int verticalPadding2 = (int) (screenSize.height * 0.0375);
         rowBCenter.add(Box.createVerticalStrut(verticalPadding2));  // Bottom margin
+        rowBCenter.add(Box.createVerticalGlue());  // absorb leftover space here
+        System.out.println("verticalPadding2 preferred size: " + verticalPadding2);
 
         // Add secondRow to centerPanel
         centerPanel.add(rowBCenter);
@@ -725,7 +800,7 @@ public class Gamewindow extends JFrame {
 
             // === Row B Panels ===
             int rowBrowAHeight = (int) (frameHeight * 0.075);
-            int rowBrowBHeight = (int) (frameHeight * 0.5125);
+            int rowBrowBHeight = (int) (frameHeight * 0.475);
             int rowBrowCHeight = (int) (frameHeight * 0.0375);
             int rowBWidth = (int) (centerPanelWidth * 0.6625);
 
@@ -744,9 +819,23 @@ public class Gamewindow extends JFrame {
             row4B.setMaximumSize(row4B.getPreferredSize());
             System.out.println("row4B preferred size: " + row4B.getPreferredSize());
 
-            row5B.setPreferredSize(new Dimension(rowBWidth, rowBrowCHeight));
+            row5B.setPreferredSize(new Dimension(rowBWidth, rowBrowAHeight));
             row5B.setMaximumSize(row5B.getPreferredSize());
             System.out.println("row5B preferred size: " + row5B.getPreferredSize());
+
+            int totalChildrenHeight = 0;
+            for (Component c : rowBCenter.getComponents()) {
+                Dimension d = c.getPreferredSize();
+                System.out.println("Child: " + c + " pref height: " + d.height);
+                totalChildrenHeight += d.height;
+            }
+            System.out.println("Sum of children preferred heights: " + totalChildrenHeight);
+            System.out.println("rowBCenter preferred height: " + rowBCenter.getPreferredSize().height);
+
+            // === Name Button in Row 2 ===
+            row1BButton.setPreferredSize(new Dimension(rowBWidth, rowBrowAHeight));
+            row1BButton.setMaximumSize(new Dimension(rowBWidth, rowBrowAHeight));
+            row1BButton.setMinimumSize(new Dimension(rowBWidth, rowBrowAHeight));
 
             // === Action Button in Row 2 ===
             int row2BButtonWidth = (int) (rowBWidth * 0.9);
@@ -756,27 +845,25 @@ public class Gamewindow extends JFrame {
             // === Fonts ===
             int baseFontSize = (int) (frameHeight * 0.030);
             Font scaledFont1 = new Font("Garamond", Font.BOLD, baseFontSize);
-            Font scaledFont2 = new Font("Garamond", Font.BOLD, (int) (baseFontSize * 1.75));
-            Font scaledFont3 = new Font("Garamond", Font.BOLD, (int) (baseFontSize * 0.9));
+            Font scaledFont2 = new Font("Garamond", Font.BOLD, (int) (baseFontSize * 1.5));
+            Font scaledFont3 = new Font("Garamond", Font.BOLD, (int) (baseFontSize * 0.8));
+            Font scaledFont4 = new Font("Garamond", Font.BOLD, (int) (baseFontSize * 1.3));
 
             for (JButton btn : firstRowButtons) {
                 btn.setFont(scaledFont1);
                 btn.setForeground(Color.BLACK);
             }
 
-            middleLabel.setFont(new Font("Garamond", Font.BOLD, (int) (frameHeight * 0.055)));
-            middleLabel.setForeground(Color.WHITE);
-
             Color fontColor = Color.WHITE;
             Color fontColor2 = new Color(0x4c2308);
             Color fontColor3 = new Color(0x662c0c);
 
-            labelrow1B.setFont(scaledFont2);
+            row1BButton.setBaseFont(scaledFont4);
             cookieCountLabel.setFont(scaledFont2);
             cookieUnitLabel.setFont(scaledFont2);
             cpsLabel.setFont(scaledFont3);
 
-            labelrow1B.setForeground(fontColor3);
+            bakeryNameLabel.setForeground(fontColor);
             cookieCountLabel.setForeground(fontColor);
             cookieUnitLabel.setForeground(fontColor);
             cpsLabel.setForeground(fontColor);
@@ -1162,7 +1249,7 @@ public class Gamewindow extends JFrame {
         // Format the numbers for display using NumberFormatter
         String formattedAmount = NumberFormatter.formatNumber(amount);
         String unit = NumberFormatter.getUnit(amount);
-        String formattedCPS = NumberFormatter.formatNumber(cps);
+        String formattedCPS = NumberFormatter.formatCPS(cps);
         String cpsUnit = NumberFormatter.getUnit(cps);
 
         // Update the labels

@@ -75,8 +75,8 @@ public class Gamestate {
 
         if (Mode.equalsIgnoreCase("SELL")) {
             if (Quantity <= upgrade.getOwned()) {
-                double refund = upgrade.getSellValue(Quantity);
                 upgrade.sell(Quantity);
+                double refund = upgrade.getSellValue(Quantity);
                 amount += refund;
 
                 System.out.println("Sold " + Quantity + "x " + upgrade.getName() + " for a refund of " + refund);
