@@ -387,6 +387,7 @@ public class Gamewindow extends JFrame {
         for (int i = 0; i < 3; i++) {
             JButton btn = new JButton("Top " + (i + 1));
             btn.setBackground(new Color(0xEAE77D));
+            btn.addActionListener(e -> { new ChaosElements(gamestate).setUp();}); //TEMPORARY SETUP GOLDEN COOKIE
             topButtons.add(btn); // Store reference
             rowBTop.add(btn);
         }
