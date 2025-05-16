@@ -1,6 +1,6 @@
 public class Main {
     public static void main(String[] args) {
-        Gamestate gamestate = new Gamestate(0); 
+        Gamestate gamestate = new Gamestate(100000000000000L); 
         GameTick gameTick = new GameTick(gamestate);
 
         Gamewindow mainwindow = new Gamewindow(gamestate);
@@ -17,6 +17,12 @@ public class Main {
         Upgrade shipment = new Upgrade("Shipment", 5100000000L, 260000, gamestate, false);
         Upgrade alchemy_lab = new Upgrade("Alchemy Lab", 75000000000L, 1600000, gamestate, false);
         Upgrade portal = new Upgrade("Portal", 1000000000000L, 10000000, gamestate, false);
+
+        Upgrade time_machine = new Upgrade("Time Machine", 14000000000000L, 65000000, gamestate, false);
+        Upgrade antimatter_condenser = new Upgrade("Antimatter Condenser", 170000000000000L, 430000000, gamestate, false);
+        Upgrade prism = new Upgrade("Prism", 2100000000000000L, 2900000000L, gamestate, false);
+        Upgrade chancemaker = new Upgrade("Chancemaker", 26000000000000000L, 21000000000L, gamestate, false);
+        Upgrade fractal_engine = new Upgrade("Fractal Engine", 310000000000000000L, 150000000000L, gamestate, false);
         
         mainwindow.addUpgrade(cursor);
         mainwindow.addUpgrade(grandma);
@@ -29,5 +35,11 @@ public class Main {
         mainwindow.addUpgrade(shipment);
         mainwindow.addUpgrade(alchemy_lab);
         mainwindow.addUpgrade(portal);
+
+        mainwindow.addUpgrade(time_machine);
+        mainwindow.addUpgrade(antimatter_condenser);
+        mainwindow.addUpgrade(prism);
+        mainwindow.addUpgrade(chancemaker);
+        mainwindow.addUpgrade(fractal_engine);
     }
 }

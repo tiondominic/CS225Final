@@ -20,44 +20,50 @@ class NumberFormatter {
     public static String formatNumber(double number) {
         if (number < 100) {
             return formatter0.format(number);
-        } else if (number < 100000) {
+        } else if (number < 100_000) {
             return formatter1.format(number);
-        } else if (number < 1000000) {
-            return formatter2.format(number / 1000);
-        } else if (number < 1000000000) {
-            return formatter3.format(number / 1000000);
-        } else if (number < 1000000000000L) {
-            return formatter3.format(number / 1000000000);
-        } else {
-            return formatter3.format(number / 1000000000000L);
-        }
-    }
-
-    public static String formatCPS(double number) {
-        if (number < 1000) {
-            return formatter1.format(number); // Always at least one decimal
         } else if (number < 1_000_000) {
-            return formatter2.format(number / 1000); // Thousand
+            return formatter2.format(number / 1_000); // Thousand
         } else if (number < 1_000_000_000) {
             return formatter3.format(number / 1_000_000); // Million
         } else if (number < 1_000_000_000_000L) {
             return formatter3.format(number / 1_000_000_000); // Billion
-        } else {
+        } else if (number < 1_000_000_000_000_000L) {
             return formatter3.format(number / 1_000_000_000_000L); // Trillion
+        } else {
+            return formatter3.format(number / 1_000_000_000_000_000L); // Quadrillion
+        }
+    }
+
+    public static String formatCPS(double number) {
+        if (number < 1_000) {
+            return formatter1.format(number); // Always at least one decimal
+        } else if (number < 1_000_000) {
+            return formatter2.format(number / 1_000);
+        } else if (number < 1_000_000_000) {
+            return formatter3.format(number / 1_000_000);
+        } else if (number < 1_000_000_000_000L) {
+            return formatter3.format(number / 1_000_000_000);
+        } else if (number < 1_000_000_000_000_000L) {
+            return formatter3.format(number / 1_000_000_000_000L);
+        } else {
+            return formatter3.format(number / 1_000_000_000_000_000L);
         }
     }
 
     public static String getUnit(double number) {
-        if (number < 100000) {
+        if (number < 100_000) {
             return "";
-        } else if (number < 1000000) {
+        } else if (number < 1_000_000) {
             return "Thousand";
-        } else if (number < 1000000000) {
+        } else if (number < 1_000_000_000) {
             return "Million";
-        } else if (number < 1000000000000L) {
+        } else if (number < 1_000_000_000_000L) {
             return "Billion";
-        } else {
+        } else if (number < 1_000_000_000_000_000L) {
             return "Trillion";
+        } else {
+            return "Quadrillion";
         }
     }
 }
@@ -375,7 +381,6 @@ class UpgradePanel extends JPanel {
         this.upgrade = upgrade;
         setLayout(new BorderLayout());
 
-        
         // Create a panel with GridLayout for the three columns
         JPanel contentPanel = new JPanel(new GridLayout(1, 3));
         contentPanel.setOpaque(false);
@@ -1205,7 +1210,7 @@ public class Gamewindow extends JFrame {
         Image rowDEastImage = new ImageIcon("assets/east_row5.png").getImage();  // Load your background image
         JPanel rowDEast = new StaticImagePanelY(rowDEastImage);  // Use the custom panel
         rowDEast.setBackground(new Color(0x7B89C4));
-        //rowDEast.setOpaque(false);
+        rowDEast.setOpaque(false);
         
         // We'll populate this in the addUpgrade method
         
