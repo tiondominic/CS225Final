@@ -220,7 +220,6 @@ class StaticImageButton extends JButton {
     }
 }
 
-
 class RotatingImageButton extends JButton {
     private final Image image;
     private double rotationAngle = 0;
@@ -297,69 +296,34 @@ class RotatingImageButton extends JButton {
     }
 }
 
-class StaticImagePanelY extends JPanel {
+class ImagePanel extends JPanel {
     private Image backgroundImage;
-
-    public StaticImagePanelY(Image image) {
+    
+    public ImagePanel(Image image) {
         this.backgroundImage = image;
-        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+        setOpaque(false);
     }
-
+    
     public void setImage(Image image) {
         this.backgroundImage = image;
         repaint();
     }
-
+    
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-
+        
         int w = getWidth();
         int h = getHeight();
-
+        
         if (backgroundImage != null) {
             Graphics2D g2d = (Graphics2D) g.create();
-
+            
             // High-quality rendering
             g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
             g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
             g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-            // Stretch image to fill the entire panel (no aspect ratio preservation)
-            g2d.drawImage(backgroundImage, 0, 0, w, h, this);
-            g2d.dispose();
-        }
-    }
-}
-
-class StaticImagePanelX extends JPanel {
-    private Image backgroundImage;
-
-    public StaticImagePanelX(Image image) {
-        this.backgroundImage = image;
-        setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
-    }
-
-    public void setImage(Image image) {
-        this.backgroundImage = image;
-        repaint();
-    }
-
-    @Override
-    protected void paintComponent(Graphics g) {
-        super.paintComponent(g);
-
-        int w = getWidth();
-        int h = getHeight();
-
-        if (backgroundImage != null) {
-            Graphics2D g2d = (Graphics2D) g.create();
-
-            // High-quality rendering
-            g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-            g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
+            
             // Stretch image to fill the entire panel (no aspect ratio preservation)
             g2d.drawImage(backgroundImage, 0, 0, w, h, this);
             g2d.dispose();
@@ -506,833 +470,42 @@ public class Gamewindow extends JFrame {
         setTitle("Cookie Clicker Layout - Colored");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        // Set size to 80% width and 80% height of the screen, and center it
+        // Set size to 75% width and 75% height of the screen, and center it
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
         int width = (int) (screenSize.width * 0.75);
         int height = (int) (screenSize.height * 0.75);
         setSize(width, height);
         setLocationRelativeTo(null); // Centers the window
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
 
         System.out.println("DEBUG SCREEN WIDTH: " + screenSize.width);
         System.out.println("DEBUG SCREEN HEIGHT: " + screenSize.height);
 
+        // Use BorderLayout for the main frame
         setLayout(new BorderLayout());
 
-        // === WEST PANEL (LEFT) ===
-        JPanel westPanel = new JPanel();
-        westPanel.setLayout(new BoxLayout(westPanel, BoxLayout.Y_AXIS));
-        westPanel.setBackground(new Color(0xFFFFFF));
+        // Calculate panel widths
+        int westPanelWidth = (int) (width * 0.275);  // 25% of frame width
+        int eastPanelWidth = (int) (width * 0.275);  // 25% of frame width
 
-        // === Row A (Title) ===
-        Image WestbgImage1 = new ImageIcon("assets/west_row1.png").getImage();  // Load your background image
-        JPanel rowAWest = new StaticImagePanelY(WestbgImage1);  // Use the custom panel
-        rowAWest.setBackground(new Color(0x39B539));
-        rowAWest.setOpaque(false);
-        rowAWest.setLayout(new GridBagLayout());  // Add proper layout manager
-        
-        westPanel.add(rowAWest);
+        // Create the three main panels with GridBagLayout
+        JPanel westPanel = createWestPanel();
+        JPanel centerPanel = createCenterPanel();
+        JPanel eastPanel = createEastPanel();
 
-        // === Row B (3 + 5 Buttons) ===
-        JPanel rowBWest = new JPanel(new GridLayout(2, 1));
-        JPanel rowBTop = new JPanel(new GridLayout(1, 3));
-        rowBTop.setBackground(new Color(0xA7EAA7));
-        for (int i = 0; i < 3; i++) {
-            JButton btn = new JButton("Top " + (i + 1));
-            btn.setBackground(new Color(0xEAE77D));
-            btn.addActionListener(e -> { new ChaosElements(gamestate).setUp();}); //TEMPORARY SETUP GOLDEN COOKIE
-            topButtons.add(btn); // Store reference
-            rowBTop.add(btn);
-        }
-        JPanel rowBBottom = new JPanel(new GridLayout(1, 5));
-        rowBBottom.setBackground(new Color(0xA7EAA7));
-        for (int i = 0; i < 5; i++) {
-            JButton btn = new JButton("Bottom " + (i + 1));
-            btn.setBackground(new Color(0xF7F4B7));
-            bottomButtons.add(btn); // Store reference
-            rowBBottom.add(btn);
-        }
-        rowBWest.add(rowBTop);
-        rowBWest.add(rowBBottom);
-        westPanel.add(rowBWest);
+        // Set fixed widths for all panels
+        westPanel.setPreferredSize(new Dimension(westPanelWidth, height));
+        westPanel.setMinimumSize(new Dimension(westPanelWidth, 0));
+        westPanel.setMaximumSize(new Dimension(westPanelWidth, Integer.MAX_VALUE));
 
-        // === Row C (Scrollable Purchased Panel) ===
-        JPanel purchasedPanel = new JPanel(new GridLayout(purchasedUpgrades, 1));
-        purchasedPanel.setBackground(new Color(0x7B89C4));
-        for (int i = 0; i < purchasedUpgrades; i++) {
-            JLabel lbl = new JLabel("Purchased Upgrade " + (i + 1), SwingConstants.CENTER);
-            lbl.setOpaque(true);
-            lbl.setBackground(new Color(0xF7F4B7));
-            lbl.setPreferredSize(new Dimension(300, 250));
-            purchasedLabels.add(lbl); // Store reference
-            JPanel wrapper = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
-            wrapper.setOpaque(false);
-            wrapper.add(lbl);
-            purchasedPanel.add(wrapper);
-        }
-        JScrollPane scrollPurchased = new JScrollPane(purchasedPanel);
-        scrollPurchased.getViewport().setBackground(new Color(0xE59C9C));
+        eastPanel.setPreferredSize(new Dimension(eastPanelWidth, height));
+        eastPanel.setMinimumSize(new Dimension(eastPanelWidth, 0));
+        eastPanel.setMaximumSize(new Dimension(eastPanelWidth, Integer.MAX_VALUE));
 
-        // TODO: FIX THE HEIGHT ISSUE
-        JPanel purchasedWrapper = new JPanel(new BorderLayout());
-        purchasedWrapper.add(scrollPurchased, BorderLayout.CENTER);
-        westPanel.add(purchasedWrapper);
-
-        // Add to frame
+        // Add panels to the frame
         add(westPanel, BorderLayout.WEST);
-
-        // === Resize listener to apply percentage sizing ===
-        addComponentListener(new ComponentAdapter() {
-            @Override
-            public void componentResized(ComponentEvent e) {
-                int frameWidth = (getWidth() - 16);
-                int frameHeight = (getHeight() + 24);
-
-                int westPanelWidth = (int) (frameWidth * 0.25); // 25% width of frame
-                int rowAHeight = (int) (frameHeight * 0.1125); // 11.25% height
-                int rowBHeight = (int) (frameHeight * 0.1125);   // 11.25% height
-                int rowCHeight = (int) (frameHeight * 0.775); // 77.5% height
-
-                System.out.println("[DEBUG] WEST PANEL WIDTH: " + westPanelWidth);
-                System.out.println("[DEBUG] WEST PANEL ROW A HEIGHT: " + rowAHeight);
-                System.out.println("[DEBUG] WEST PANEL ROW B HEIGHT: " + rowBHeight);
-                System.out.println("[DEBUG] WEST PANEL ROW C HEIGHT: " + rowCHeight);
-
-                // Set panel & row sizes
-                westPanel.setPreferredSize(new Dimension(westPanelWidth, frameHeight));
-                westPanel.setMinimumSize(westPanel.getPreferredSize());
-                westPanel.setMaximumSize(westPanel.getPreferredSize());
-
-                rowAWest.setPreferredSize(new Dimension(westPanelWidth, rowAHeight));
-                rowAWest.setMinimumSize(rowAWest.getPreferredSize());
-                rowAWest.setMaximumSize(rowAWest.getPreferredSize());
-
-                rowBWest.setPreferredSize(new Dimension(westPanelWidth, rowBHeight));
-                rowBWest.setMinimumSize(rowBWest.getPreferredSize());
-                rowBWest.setMaximumSize(rowBWest.getPreferredSize());
-
-                purchasedWrapper.setPreferredSize(new Dimension(westPanelWidth, rowCHeight));
-                purchasedWrapper.setMinimumSize(purchasedWrapper.getPreferredSize());
-                purchasedWrapper.setMaximumSize(purchasedWrapper.getPreferredSize());
-
-                // Resize top buttons (Row B - Top)
-                int topBtnWidth = (int) (frameWidth * 0.25);
-                int topBtnHeight = (int) (frameHeight * 0.05625); // ~8% of height
-                for (JButton btn : topButtons) {
-                    btn.setPreferredSize(new Dimension(topBtnWidth, topBtnHeight));
-                }
-
-                // Resize bottom buttons (Row B - Bottom)
-                int bottomBtnWidth = (int) (frameWidth * 0.25);
-                int bottomBtnHeight = (int) (rowBHeight * 0.05625); // 40% of row height
-                for (JButton btn : bottomButtons) {
-                    btn.setPreferredSize(new Dimension(bottomBtnWidth, bottomBtnHeight));
-                }
-
-                // Resize purchased upgrade labels (Row C)
-                int purchasedLblWidth = (int) (frameWidth * 0.25);
-                int purchasedLblHeight = (int) (frameHeight * 0.25); // ~8% of height
-                for (JLabel lbl : purchasedLabels) {
-                    lbl.setPreferredSize(new Dimension(purchasedLblWidth, purchasedLblHeight));
-                }
-
-                // Revalidate and repaint the panel to apply the changes
-                westPanel.revalidate();
-                westPanel.repaint();
-            }
-        });
-
-        // === CENTER PANEL ===
-        JPanel centerPanel = new JPanel();
-        centerPanel.setLayout(new BoxLayout(centerPanel, BoxLayout.Y_AXIS));
-        centerPanel.setBackground(new Color(0xFFFFFF));
-
-        // === 1st Row (Header) ===
-
-        Image bgImage0 = new ImageIcon("assets/center_rowACenter_1.png").getImage();  // Load your background image
-        JPanel rowACenter = new StaticImagePanelX(bgImage0);  // Use the custom panel
-        rowACenter.setBackground(new Color(0xDBD221));
-        rowACenter.setOpaque(false);
-        centerRows.add(rowACenter);
-
-        int horizontalPadding1 = (int) (screenSize.width * 0.014);
-        rowACenter.add(Box.createHorizontalStrut(horizontalPadding1));  // or any pixel value you want
-
-        // === Column 1 (2 Buttons) ===
-        JPanel column1A = new JPanel();
-        column1A.setLayout(new BoxLayout(column1A, BoxLayout.Y_AXIS));
-        column1A.setBackground(new Color(0xA7EAA7));
-        column1A.setOpaque(false);
-        rowACenter.add(column1A);
-
-
-        Image staticButtonImage1 = new ImageIcon("assets/center_row1_columnA1.png").getImage();
-        StaticImageButton column1AButton1 = new StaticImageButton("Options", staticButtonImage1);
-        column1AButton1.addActionListener(e -> System.out.println("Button 1 clicked"));
-
-        firstRowButtons.add(column1AButton1);
-
-        JPanel button1Wrapper = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
-        button1Wrapper.setOpaque(false);
-        button1Wrapper.add(column1AButton1);
-        column1A.add(button1Wrapper);
-
-        // Button 2
-        Image staticButtonImage2 = new ImageIcon("assets/center_row1_columnA2.png").getImage();
-        StaticImageButton column1AButton2 = new StaticImageButton("Options", staticButtonImage2);
-        column1AButton2.addActionListener(e -> System.out.println("Button 2 clicked"));
-
-        firstRowButtons.add(column1AButton2);
-
-        JPanel button2Wrapper = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
-        button2Wrapper.setOpaque(false);
-        button2Wrapper.add(column1AButton2);
-        column1A.add(button2Wrapper);
-
-        // === Column 2 (Middle Label) ===
-
-        // === 2nd Row (Content) ===
-        // We'll use a panel with BoxLayout for the second row
-        Image bgImage2 = new ImageIcon("assets/center_row1_columnB1.png").getImage();  // Load your background image
-        JPanel column2A = new StaticImagePanelY(bgImage2);  // Use the custom panel
-        column2A.setBackground(new Color(0xE59C9C));
-        column2A.setOpaque(false);
-        rowACenter.add(column2A);
-
-        // === Column 3 (2 Buttons) ===
-        JPanel column3A = new JPanel();
-        column3A.setLayout(new BoxLayout(column3A, BoxLayout.Y_AXIS));
-        column3A.setBackground(new Color(0xA7EAA7));
-        column3A.setOpaque(false);
-        rowACenter.add(column3A);
-
-        int horizontalPadding2 = (int) (screenSize.width * 0.014);
-        rowACenter.add(Box.createHorizontalStrut(horizontalPadding2));  // or any pixel value you want
-
-        // Button 3
-        Image staticButtonImage3 = new ImageIcon("assets/center_row1_columnC1.png").getImage();
-        StaticImageButton column3AButton1 = new StaticImageButton("Options", staticButtonImage3);
-        column3AButton1.addActionListener(e -> System.out.println("Button 3 clicked"));
-        
-        firstRowButtons.add(column3AButton1);
-
-        JPanel button3Wrapper = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
-        button3Wrapper.setOpaque(false);
-        button3Wrapper.add(column3AButton1);
-        column3A.add(button3Wrapper);
-
-        // Button 4
-        Image staticButtonImage4 = new ImageIcon("assets/center_row1_columnC2.png").getImage();
-        StaticImageButton column3AButton2 = new StaticImageButton("Options", staticButtonImage4);
-        column3AButton2.addActionListener(e -> System.out.println("Button 4 clicked"));
-        firstRowButtons.add(column3AButton2);
-
-        JPanel button4Wrapper = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
-        button4Wrapper.setOpaque(false);
-        button4Wrapper.add(column3AButton2);
-        column3A.add(button4Wrapper);
-
-        // Add to center panel
-        centerPanel.add(rowACenter);
-
-        // === 2nd Row (Content) ===
-        // We'll use a panel with BoxLayout for the second row
-        Image bgImage = new ImageIcon("assets/main_background_1.png").getImage();  // Load your background image
-        JPanel rowBCenter = new StaticImagePanelY(bgImage);  // Use the custom panel
-        rowBCenter.setBackground(new Color(0xE59C9C));
-        centerRows.add(rowBCenter);
-
-        int verticalPadding1 = (int) (screenSize.height * 0.0375);
-        rowBCenter.add(Box.createVerticalStrut(verticalPadding1));  // Bottom margin
-
-        // Row 1 (Button with own size)
-        JPanel row1B = new JPanel(new GridBagLayout()); // Instead of default FlowLayout
-        row1B.setBackground(new Color(0, 0, 0, 64)); // 128 = 50% transparency
-        row1B.setOpaque(false);
-
-        // === Create the button with image background ===
-        Image staticButtonImage5 = new ImageIcon("assets/center_row2_rowA.png").getImage();
-        StaticImageButton row1BButton = new StaticImageButton("Options", staticButtonImage5);
-        row1BButton.setLayout(new GridBagLayout());
-
-        // Create constraints for label positioning
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.anchor = GridBagConstraints.CENTER;
-        gbc.insets = new Insets(9, 0, 0, 0); // top, left, bottom, right — pushes label down 10px
-
-        // === Bakery name label ===
-        JLabel bakeryNameLabel = new JLabel("Cookie Clicker’s Bakery");
-        bakeryNameLabel.setForeground(Color.WHITE);
-        bakeryNameLabel.setFont(new Font("Garamond", Font.BOLD, 24)); // <-- Will be updated in resize
-        row1BButton.add(bakeryNameLabel, gbc);
-
-        // === Click to rename logic ===
-        row1BButton.addActionListener(e -> {
-            String input = JOptionPane.showInputDialog(
-                row1BButton,
-                "Enter your bakery's name (max " + maxNameLength + " characters):",
-                bakeryNameLabel.getText().replace("’s Bakery", "")
-            );
-            System.out.println("Button 1 clicked");
-            if (input != null) {
-                input = input.trim();
-                if (!input.isEmpty()) {
-                    if (input.length() > maxNameLength) {
-                        JOptionPane.showMessageDialog(row1BButton, "Name cannot exceed " + maxNameLength + " characters.");
-                        return;
-                    }
-                    bakeryNameLabel.setText(input + "’s Bakery");
-                }
-            }
-        });
-        row1B.add(row1BButton);
-        rowBCenter.add(row1B);
-        secondRowPanels.add(row1B);
-
-        // Row 2 (Button with own size)
-        JPanel row2B = new JPanel(new GridBagLayout()); // Instead of default FlowLayout
-        row2B.setBackground(new Color(0, 0, 0, 64)); // 128 = 50% transparency
-        row2B.setOpaque(false);
-
-        Image img = new ImageIcon("assets/main_cookie_3.png").getImage();
-        RotatingImageButton actionButtonrow2B = new RotatingImageButton(null, img);
-        
-        // Connect cookie button to gamestate
-        actionButtonrow2B.addActionListener(e -> {
-            gamestate.Click();
-            updateDisplay();
-
-            // Get screen coordinates of mouse
-            Point screenPoint = MouseInfo.getPointerInfo().getLocation();
-
-            // Convert to coordinates relative to the frame (not the button)
-            Point framePoint = getLayeredPane().getLocationOnScreen();
-            int clickX = screenPoint.x - framePoint.x;
-            int clickY = screenPoint.y - framePoint.y;
-
-            // Show floating text
-            showFloatingText(clickX, clickY, "+" + NumberFormatter.formatNumber(gamestate.getClickingPower()));
-        });
-
-        row2B.add(actionButtonrow2B);
-        rowBCenter.add(row2B);
-        secondRowPanels.add(row2B);
-
-        Image row3BImage = new ImageIcon("assets/center_row2_rowC.png").getImage();  // Load your background image
-        JPanel row3B = new StaticImagePanelY(row3BImage);  // Use the custom panel
-        row3B.setBackground(new Color(0xE59C9C));
-        row3B.setAlignmentX(Component.CENTER_ALIGNMENT);
-        row3B.setOpaque(false);
-
-        row3B.setLayout(new GridBagLayout());
-        GridBagConstraints gbcBottom = new GridBagConstraints();
-        gbcBottom.gridx = 0;
-        gbcBottom.gridy = 0;
-        gbcBottom.weighty = 1.0;
-        gbcBottom.weightx = 1.0;
-        gbcBottom.insets = new Insets(16, 0, 0, 0); // top, left, bottom, right — pushes label down 10px
-        gbcBottom.anchor = GridBagConstraints.SOUTH; // Align to bottom
-        gbcBottom.fill = GridBagConstraints.NONE;
-
-        cookieCountLabel = new JLabel("0.0");
-        row3B.add(cookieCountLabel, gbcBottom);
-        rowBCenter.add(row3B);
-        secondRowPanels.add(row3B);
-
-        Image row4BImage = new ImageIcon("assets/center_row2_rowD.png").getImage();  // Load your background image
-        JPanel row4B = new StaticImagePanelY(row4BImage);  // Use the custom panel
-        
-        row4B.setBackground(new Color(0xE59C9C));
-        row4B.setAlignmentX(Component.CENTER_ALIGNMENT);
-        row4B.setOpaque(false);
-
-        row4B.setLayout(new GridBagLayout());  // Center contents
-        GridBagConstraints gbcTop1 = new GridBagConstraints();
-        gbcTop1.gridx = 0;
-        gbcTop1.gridy = 0;
-        gbcTop1.weighty = 1.0;
-        gbcTop1.weightx = 1.0;
-        gbcTop1.anchor = GridBagConstraints.NORTH; // Align to bottom
-        gbcTop1.fill = GridBagConstraints.NONE;
-
-        cookieUnitLabel = new JLabel("Cookies");
-        row4B.add(cookieUnitLabel, gbcTop1);
-        rowBCenter.add(row4B);
-        secondRowPanels.add(row4B);
-
-        Image row5BImage = new ImageIcon("assets/center_row2_rowE.png").getImage();  // Load your background image
-        JPanel row5B = new StaticImagePanelY(row5BImage);  // Use the custom panel
-
-        row5B.setBackground(new Color(0xE59C9C));
-        row5B.setAlignmentX(Component.CENTER_ALIGNMENT);
-        row5B.setOpaque(false);
-        
-        row5B.setLayout(new GridBagLayout());
-        GridBagConstraints gbcTop = new GridBagConstraints();
-        gbcTop.gridx = 0;
-        gbcTop.gridy = 0;
-        gbcTop.weighty = 1.0;
-        gbcTop.weightx = 1.0;
-        gbcTop.insets = new Insets(0, 0, 20, 0); // top, left, bottom, right — pushes label down 10px
-        gbcTop.anchor = GridBagConstraints.NORTH; // Align to top
-        gbcTop.fill = GridBagConstraints.NONE;
-
-        cpsLabel = new JLabel("0.0 per second");
-        row5B.add(cpsLabel, gbcTop);
-        rowBCenter.add(row5B);
-        secondRowPanels.add(row5B);
-        
-        // TO DO: FIX THE SPACINGS LATER, AS OF NOW ITS ACCEPTABLE
-        int verticalPadding2 = (int) (screenSize.height * 0.0375);
-        rowBCenter.add(Box.createVerticalStrut(verticalPadding2));  // Bottom margin
-        rowBCenter.add(Box.createVerticalGlue());  // absorb leftover space here
-        System.out.println("verticalPadding2 preferred size: " + verticalPadding2);
-
-        // Add secondRow to centerPanel
-        centerPanel.add(rowBCenter);
-
-        // === Add Center Panel to Frame ===
         add(centerPanel, BorderLayout.CENTER);
-
-        // === SEPARATE RESIZE LISTENER FOR CENTER PANEL ===
-        centerPanel.addComponentListener(new ComponentAdapter() {
-        @Override
-        public void componentResized(ComponentEvent e) {
-            int frameWidth = (getWidth() - 16);
-            int frameHeight = (getHeight() + 24);
-
-            // === CENTER PANEL SIZE ===
-            int centerPanelWidth = (int) (frameWidth * 0.5); // 50% width
-            centerPanel.setPreferredSize(new Dimension(centerPanelWidth, frameHeight));
-            System.out.println("centerPanel preferred size: " + centerPanel.getPreferredSize());
-
-            // === Row A ===
-            int rowAHeight = (int) Math.round(frameHeight * 0.15);
-            rowACenter.setPreferredSize(new Dimension(centerPanelWidth, rowAHeight));
-            rowACenter.setMinimumSize(rowACenter.getPreferredSize());
-
-            // === Row B ===
-            int rowBHeight = (int) (frameHeight * 0.85);
-            rowBCenter.setPreferredSize(new Dimension(centerPanelWidth, rowBHeight));
-            rowBCenter.setMinimumSize(rowBCenter.getPreferredSize());
-
-            // === Row A Columns ===
-            int rowAColumnAWidth = (int) (centerPanelWidth * 0.16875);
-            int rowAColumnBWidth = (int) (centerPanelWidth * 0.6065);
-
-            column1A.setPreferredSize(new Dimension(rowAColumnAWidth, rowAHeight));
-            column1A.setMinimumSize(column1A.getPreferredSize());
-            column1A.setMaximumSize(column1A.getPreferredSize());
-
-            column2A.setPreferredSize(new Dimension(rowAColumnBWidth, rowAHeight));
-            column2A.setMinimumSize(column2A.getPreferredSize());
-            column2A.setMaximumSize(column2A.getPreferredSize());
-
-            column3A.setPreferredSize(new Dimension(rowAColumnAWidth, rowAHeight));
-            column3A.setMinimumSize(column3A.getPreferredSize());
-            column3A.setMaximumSize(column3A.getPreferredSize());
-
-            System.out.println("Frame w: " + frameWidth);
-            System.out.println("Centerpanel w: " + frameWidth);
-            System.out.println("Frame h: " + frameHeight);
-            System.out.println("Centerpanel h: " + centerPanelWidth);
-            System.out.println("column1A preferred size: " + column1A.getPreferredSize());
-            System.out.println("column2A preferred size: " + column2A.getPreferredSize());
-            System.out.println("column3A preferred size: " + column3A.getPreferredSize());
-
-            // === Row A Buttons ===
-            int rowAButtonWidth = rowAColumnAWidth;
-            int rowAButtonHeight = (int) (frameHeight * 0.075);
-            for (JButton btn : firstRowButtons) {
-                btn.setPreferredSize(new Dimension(rowAButtonWidth, rowAButtonHeight));
-                btn.setMaximumSize(new Dimension(rowAButtonWidth, rowAButtonHeight));
-                System.out.println("column preferred size: " + btn.getPreferredSize());
-            }
-
-            // === Row B Panels ===
-            int rowBrowAHeight = (int) (frameHeight * 0.075);
-            int rowBrowBHeight = (int) (frameHeight * 0.475);
-            int rowBWidth = (int) (centerPanelWidth * 0.6625);
-
-            row1B.setPreferredSize(new Dimension(rowBWidth, rowBrowAHeight));
-            row1B.setMaximumSize(row1B.getPreferredSize());
-            System.out.println("row1B preferred size: " + row1B.getPreferredSize());
-
-            row2B.setPreferredSize(new Dimension(rowBWidth, rowBrowBHeight));
-            row2B.setMaximumSize(row2B.getPreferredSize());
-
-            row3B.setPreferredSize(new Dimension(rowBWidth, rowBrowAHeight));
-            row3B.setMaximumSize(row3B.getPreferredSize());
-            System.out.println("row3B preferred size: " + row3B.getPreferredSize());
-
-            row4B.setPreferredSize(new Dimension(rowBWidth, rowBrowAHeight));
-            row4B.setMaximumSize(row4B.getPreferredSize());
-            System.out.println("row4B preferred size: " + row4B.getPreferredSize());
-
-            row5B.setPreferredSize(new Dimension(rowBWidth, rowBrowAHeight));
-            row5B.setMaximumSize(row5B.getPreferredSize());
-            System.out.println("row5B preferred size: " + row5B.getPreferredSize());
-
-            // === Name Button in Row 2 ===
-            row1BButton.setPreferredSize(new Dimension(rowBWidth, rowBrowAHeight));
-            row1BButton.setMaximumSize(new Dimension(rowBWidth, rowBrowAHeight));
-            row1BButton.setMinimumSize(new Dimension(rowBWidth, rowBrowAHeight));
-
-            // === Action Button in Row 2 ===
-            int row2BButtonWidth = (int) (rowBWidth * 0.9);
-            int row2BButtonHeight = (int) (rowBrowBHeight * 0.9);
-            actionButtonrow2B.setPreferredSize(new Dimension(row2BButtonWidth, row2BButtonHeight));
-
-            // === Fonts ===
-            int baseFontSize = (int) (frameHeight * 0.030);
-            Font scaledFont1 = new Font("Garamond", Font.BOLD, baseFontSize);
-            Font scaledFont2 = new Font("Garamond", Font.BOLD, (int) (baseFontSize * 1.5));
-            Font scaledFont3 = new Font("Garamond", Font.BOLD, (int) (baseFontSize * 0.8));
-            Font scaledFont4 = new Font("Garamond", Font.BOLD, (int) (baseFontSize * 1.3));
-
-            for (JButton btn : firstRowButtons) {
-                btn.setFont(scaledFont1);
-                btn.setForeground(Color.BLACK);
-            }
-
-            Color fontColor = Color.WHITE;
-
-            row1BButton.setBaseFont(scaledFont4);
-            cookieCountLabel.setFont(scaledFont2);
-            cookieUnitLabel.setFont(scaledFont2);
-            cpsLabel.setFont(scaledFont3);
-
-            bakeryNameLabel.setForeground(fontColor);
-            cookieCountLabel.setForeground(fontColor);
-            cookieUnitLabel.setForeground(fontColor);
-            cpsLabel.setForeground(fontColor);
-
-            actionButtonrow2B.setFont(scaledFont2);
-            actionButtonrow2B.setForeground(fontColor);
-
-            // Final repaint
-            centerPanel.revalidate();
-            centerPanel.repaint();
-        }
-    });
-
-        // === EAST PANEL (RIGHT) ===
-        JPanel eastPanel = new JPanel();
-        eastPanel.setLayout(new BoxLayout(eastPanel, BoxLayout.Y_AXIS));
-        eastPanel.setBackground(new Color(0xFFFFFF));
-
-        // === Row A (Title) ===
-        Image EastbgImage1 = new ImageIcon("assets/east_row1.png").getImage();  // Load your background image
-        JPanel rowAEast = new StaticImagePanelY(EastbgImage1);  // Use the custom panel
-        rowAEast.setBackground(new Color(0x39B539));
-        rowAEast.setOpaque(false);
-        rowAEast.setLayout(new GridBagLayout());  // Add proper layout manager
-        eastPanel.add(rowAEast);
-
-        // === Row B (2 rows x 5 columns using BoxLayout) ===
-        Image rowBEastbgImage = new ImageIcon("assets/east_row2.png").getImage();  // Load your background image
-        JPanel rowBEast = new StaticImagePanelY(rowBEastbgImage);  // Use the custom panel
-        rowBEast.setOpaque(false);
-        rowBEast.setBackground(new Color(0x601818));
-
-        // === First row of upgrades ===
-        JPanel upgradeRow1 = new JPanel();
-        upgradeRow1.setLayout(new BoxLayout(upgradeRow1, BoxLayout.X_AXIS));
-        upgradeRow1.setOpaque(false);
-
-        JButton upgrade1 = new JButton("Upgrade 1");
-        JButton upgrade2 = new JButton("Upgrade 2");
-        JButton upgrade3 = new JButton("Upgrade 3");
-        JButton upgrade4 = new JButton("Upgrade 4");
-        JButton upgrade5 = new JButton("Upgrade 5");
-
-        upgrade1.setBackground(new Color(0xEAE77D));
-        upgrade2.setBackground(new Color(0xEAE77D));
-        upgrade3.setBackground(new Color(0xEAE77D));
-        upgrade4.setBackground(new Color(0xEAE77D));
-        upgrade5.setBackground(new Color(0xEAE77D));
-
-        toolButtons.add(upgrade1);
-        toolButtons.add(upgrade2);
-        toolButtons.add(upgrade3);
-        toolButtons.add(upgrade4);
-        toolButtons.add(upgrade5);
-
-        upgradeRow1.add(upgrade1);
-        upgradeRow1.add(upgrade2);
-        upgradeRow1.add(upgrade3);
-        upgradeRow1.add(upgrade4);
-        upgradeRow1.add(upgrade5);
-
-        // === Second row of upgrades ===
-        JPanel upgradeRow2 = new JPanel();
-        upgradeRow2.setLayout(new BoxLayout(upgradeRow2, BoxLayout.X_AXIS));
-        upgradeRow2.setOpaque(false);
-
-        JButton upgrade6 = new JButton("Upgrade 6");
-        JButton upgrade7 = new JButton("Upgrade 7");
-        JButton upgrade8 = new JButton("Upgrade 8");
-        JButton upgrade9 = new JButton("Upgrade 9");
-        JButton upgrade10 = new JButton("Upgrade 10");
-
-        upgrade6.setBackground(new Color(0xEAE77D));
-        upgrade7.setBackground(new Color(0xEAE77D));
-        upgrade8.setBackground(new Color(0xEAE77D));
-        upgrade9.setBackground(new Color(0xEAE77D));
-        upgrade10.setBackground(new Color(0xEAE77D));
-
-        toolButtons.add(upgrade6);
-        toolButtons.add(upgrade7);
-        toolButtons.add(upgrade8);
-        toolButtons.add(upgrade9);
-        toolButtons.add(upgrade10);
-
-        upgradeRow2.add(upgrade6);
-        upgradeRow2.add(upgrade7);
-        upgradeRow2.add(upgrade8);
-        upgradeRow2.add(upgrade9);
-        upgradeRow2.add(upgrade10);
-
-        // Add both rows to main panel
-        rowBEast.add(upgradeRow1);
-        rowBEast.add(upgradeRow2);
-
-        // Add to east panel
-        eastPanel.add(rowBEast);
-
-        // === Row C (1 row x 5 columns with different widths) ===
-        // TODO: FIX THE BACKGROUND IMAGE NOT SHOWING
-        Image rowCEastImage = new ImageIcon("assets/east_row3.png").getImage();  // Load your background image
-        JPanel rowCEast = new StaticImagePanelX(rowCEastImage);  // Use the custom panel
-        rowCEast.setBackground(new Color(0xA7EAA7));
-        rowCEast.setOpaque(false);
-
-        // Create label and buttons
-        Image buyImage = new ImageIcon("assets/east_row3_column1_Buy.png").getImage();
-        Image sellImage = new ImageIcon("assets/east_row3_column1_Sell.png").getImage();
-
-        StaticImagePanelY rowCEast_column1 = new StaticImagePanelY(buyImage);
-
-        JLabel modeLabel = new JLabel("Buy", SwingConstants.CENTER);
-        rowCEast_column1.add(modeLabel); // Add label after layout set
-        modeLabel.setVisible(false);
-
-        rowCEast_column1.setOpaque(false);
-        rowCEast_column1.setBackground(new Color(0xEAE77D));
-
-
-        Image rowCEast_column2_button = new ImageIcon("assets/east_row3_column2.png").getImage();
-        StaticImageToggleButton rowCEast_column2 = new StaticImageToggleButton("1", rowCEast_column2_button);
-
-        Image rowCEast_column3_button = new ImageIcon("assets/east_row3_column3.png").getImage();
-        StaticImageToggleButton rowCEast_column3 = new StaticImageToggleButton("10", rowCEast_column3_button);
-
-        Image rowCEast_column4_button = new ImageIcon("assets/east_row3_column4.png").getImage();
-        StaticImageToggleButton rowCEast_column4 = new StaticImageToggleButton("100", rowCEast_column4_button);
-
-        ButtonGroup quantityGroup = new ButtonGroup();
-        quantityGroup.add(rowCEast_column2);
-        quantityGroup.add(rowCEast_column3);
-        quantityGroup.add(rowCEast_column4);
-
-        Color selectedColor = new Color(0xC1FF72); // light green
-        Color defaultColor = new Color(0xEAE77D);  // your base yellow
-
-        ActionListener quantityListener = e -> {
-            AbstractButton source = (AbstractButton) e.getSource();
-
-            // Set Global quantity
-            if (source == rowCEast_column2) Global.setQuantity(1);
-            else if (source == rowCEast_column3) Global.setQuantity(10);
-            else if (source == rowCEast_column4) Global.setQuantity(100);
-
-            // Update background colors
-            rowCEast_column2.setBackground(rowCEast_column2.isSelected() ? selectedColor : defaultColor);
-            rowCEast_column3.setBackground(rowCEast_column3.isSelected() ? selectedColor : defaultColor);
-            rowCEast_column4.setBackground(rowCEast_column4.isSelected() ? selectedColor : defaultColor);
-        };
-
-        rowCEast_column2.addActionListener(quantityListener);
-        rowCEast_column3.addActionListener(quantityListener);
-        rowCEast_column4.addActionListener(quantityListener);
-
-        Image rowCEast_column5_button = new ImageIcon("assets/east_row3_column5.png").getImage();
-        StaticImageButton rowCEast_column5 = new StaticImageButton("S", rowCEast_column5_button);
-
-        rowCEast_column5.addActionListener(e -> {
-            if ("Buy".equalsIgnoreCase(modeLabel.getText())) {
-                modeLabel.setText("Sell");
-                rowCEast_column1.setImage(sellImage);
-                Global.setMode("SELL");
-            } else {
-                modeLabel.setText("Buy");
-                rowCEast_column1.setImage(buyImage);
-                Global.setMode("BUY");
-            }
-        });
-
-        rowCEast_column2.setBackground(new Color(0xEAE77D));
-        rowCEast_column3.setBackground(new Color(0xEAE77D));
-        rowCEast_column4.setBackground(new Color(0xEAE77D));
-        rowCEast_column5.setBackground(new Color(0xEAE77D));
-
-        // Add to tracking lists
-        genLabel.add(modeLabel);
-        genToggleButtons.add(rowCEast_column2);
-        genToggleButtons.add(rowCEast_column3);
-        genToggleButtons.add(rowCEast_column4);
-        genButtons.add(rowCEast_column5);
-
-        // Wrap each component in its own JPanel (needed for consistent sizing)
-        JPanel rowCEast_column1_wrapper = new JPanel(new BorderLayout());
-        JPanel rowCEast_column2_wrapper = new JPanel(new BorderLayout());
-        JPanel rowCEast_column3_wrapper = new JPanel(new BorderLayout());
-        JPanel rowCEast_column4_wrapper = new JPanel(new BorderLayout());
-        JPanel rowCEast_column5_wrapper = new JPanel(new BorderLayout());
-
-        rowCEast_column1_wrapper.add(rowCEast_column1, BorderLayout.CENTER);
-        rowCEast_column2_wrapper.add(rowCEast_column2, BorderLayout.CENTER);
-        rowCEast_column3_wrapper.add(rowCEast_column3, BorderLayout.CENTER);
-        rowCEast_column4_wrapper.add(rowCEast_column4, BorderLayout.CENTER);
-        rowCEast_column5_wrapper.add(rowCEast_column5, BorderLayout.CENTER);
-
-        // Add wrappers to Row C
-        rowCEast.add(rowCEast_column1_wrapper);
-        rowCEast.add(rowCEast_column2_wrapper);
-        rowCEast.add(rowCEast_column3_wrapper);
-        rowCEast.add(rowCEast_column4_wrapper);
-        rowCEast.add(rowCEast_column5_wrapper);
-
-        eastPanel.add(rowCEast);
-
-        // === Row D (Scrollable available upgrades) ===
-        Image rowDEastImage = new ImageIcon("assets/east_row5.png").getImage();  // Load your background image
-        JPanel rowDEast = new StaticImagePanelY(rowDEastImage);  // Use the custom panel
-        rowDEast.setBackground(new Color(0x7B89C4));
-        rowDEast.setOpaque(false);
-        
-        // We'll populate this in the addUpgrade method
-        
-        JScrollPane scrollableUpgrades = new JScrollPane(rowDEast);
-        scrollableUpgrades.getViewport().setBackground(new Color(0xE59C9C));
-
-        JPanel scrollableUpgradesPanel = new JPanel(new BorderLayout());
-        scrollableUpgradesPanel.add(scrollableUpgrades, BorderLayout.CENTER);
-        eastPanel.add(scrollableUpgradesPanel);
-
-        // === Add to Frame ===
         add(eastPanel, BorderLayout.EAST);
-
-        // === Resize listener ===
-        addComponentListener(new ComponentAdapter() {
-            @Override
-            public void componentResized(ComponentEvent e) {
-                int windowWidth = (getWidth() - 16);
-                int windowWidth2 = getWidth();
-                int windowHeight = (getHeight() + 24);
-                int windowHeight2 = getHeight();
-
-                System.out.println("DEBUG WINDOW WIDTH: " + windowWidth);
-                System.out.println("DEBUG WINDOW WIDTH REAL: " + windowWidth2);
-                System.out.println("DEBUG WINDOW HEIGHT: " + windowHeight);
-                System.out.println("DEBUG WINDOW HEIGHT REAL: " + windowHeight2);
-
-                int eastPanelWidth = (int) (windowWidth * 0.25);  // 25% width of frame
-                System.out.println("DEBUG EAST PANEL WIDTH: " + eastPanelWidth);
-                int rowAHeight = (int) (windowHeight * 0.1125); // 11.25%
-                int rowBHeight = (int) (windowHeight * 0.15);   // 15%
-                int rowCHeight = (int) (windowHeight * 0.05);   // 5%
-                int rowDHeight = (int) (windowHeight * 0.6875); // Remaining (100 - sum above)
-
-                int rowBRowsHeight = (int) (rowBHeight * 0.5);
-                
-                // Set panel & row sizes
-                eastPanel.setPreferredSize(new Dimension(eastPanelWidth, windowHeight));
-                eastPanel.setMinimumSize(eastPanel.getPreferredSize());
-                eastPanel.setMaximumSize(eastPanel.getPreferredSize());
-                System.out.println("[DEBUG] EAST PANEL SIZE: " + eastPanel.getPreferredSize());
-
-                rowAEast.setPreferredSize(new Dimension(eastPanelWidth, rowAHeight));
-                rowAEast.setMinimumSize(rowAEast.getPreferredSize());
-                rowAEast.setMaximumSize(rowAEast.getPreferredSize());
-
-                rowBEast.setPreferredSize(new Dimension(eastPanelWidth, rowBHeight));
-                rowBEast.setMinimumSize(rowBEast.getPreferredSize());
-                rowBEast.setMaximumSize(rowBEast.getPreferredSize());
-                System.out.println("[DEBUG] ROW B EAST SIZE: " + rowBEast.getPreferredSize());
-
-                upgradeRow1.setPreferredSize(new Dimension(eastPanelWidth, rowBRowsHeight));
-                upgradeRow1.setMinimumSize(upgradeRow1.getPreferredSize());
-                upgradeRow1.setMaximumSize(upgradeRow1.getPreferredSize());
-                System.out.println("[DEBUG] ROW B UPGRADE ROW 1 EAST SIZE: " + upgradeRow1.getPreferredSize());
-
-                upgradeRow2.setPreferredSize(new Dimension(eastPanelWidth, rowBRowsHeight));
-                upgradeRow2.setMinimumSize(upgradeRow2.getPreferredSize());
-                upgradeRow2.setMaximumSize(upgradeRow2.getPreferredSize());
-                System.out.println("[DEBUG] ROW B UPGRADE ROW 2 EAST SIZE: " + upgradeRow2.getPreferredSize());
-
-                rowCEast.setPreferredSize(new Dimension(eastPanelWidth, rowCHeight));
-                rowCEast.setMinimumSize(rowCEast.getPreferredSize());
-                rowCEast.setMaximumSize(rowCEast.getPreferredSize());
-                System.out.println("[DEBUG] ROW C EAST SIZE: " + rowCEast.getPreferredSize());
-
-                scrollableUpgradesPanel.setPreferredSize(new Dimension(eastPanelWidth, rowDHeight));
-                scrollableUpgradesPanel.setMinimumSize(scrollableUpgradesPanel.getPreferredSize());
-                scrollableUpgradesPanel.setMaximumSize(scrollableUpgradesPanel.getPreferredSize());
-                System.out.println("[DEBUG] ROW C EAST SIZE: " + rowCEast.getPreferredSize());
-
-                // Update button size variables
-                upgradeButtonWidth = (int) (eastPanelWidth);
-                upgradeButtonHeight = (int) (windowHeight * 0.1);
-
-                // Resize upgrade wrappers
-                for (JPanel wrapper : upgradeWrappers) {
-                    wrapper.setPreferredSize(new Dimension(upgradeButtonWidth, upgradeButtonHeight));
-                    wrapper.setMinimumSize(new Dimension(upgradeButtonWidth, upgradeButtonHeight));
-                }
-
-                // === Resize Upgrade Buttons in Row B ===
-                int upgradeBtnHeight = (int) (windowHeight * 0.075);  // 7.5% height
-                int upgradeBtnWidth = (int) (eastPanelWidth * 0.2);  // 7.5% height
-
-                for (JButton btn : toolButtons) {
-                    btn.setPreferredSize(new Dimension(upgradeBtnWidth, upgradeBtnHeight));
-                    btn.setMinimumSize(btn.getPreferredSize());
-                    btn.setMaximumSize(btn.getPreferredSize());
-                }
-
-                // Resize gen buttons (Row C) with different widths
-                int totalWidth = eastPanelWidth;
-
-                int column1to5Height = (int) (windowHeight * 0.05);
-
-                // Calculate widths
-                int column1Width = (int)(totalWidth * 0.355);
-                int column2to4Width = (int)(totalWidth * 0.1775);
-                int column5Width = (int)(totalWidth * 0.1125);
-
-                // Get wrapper components
-                Component[] wrappers = rowCEast.getComponents();
-
-                // Resize each wrapper
-                wrappers[0].setPreferredSize(new Dimension(column1Width, column1to5Height));
-                wrappers[1].setPreferredSize(new Dimension(column2to4Width, column1to5Height));
-                wrappers[2].setPreferredSize(new Dimension(column2to4Width, column1to5Height));
-                wrappers[3].setPreferredSize(new Dimension(column2to4Width, column1to5Height));
-                wrappers[4].setPreferredSize(new Dimension(column5Width, column1to5Height));
-
-                for (Component wrapper : wrappers) {
-                    wrapper.setMinimumSize(wrapper.getPreferredSize());
-                    wrapper.setMaximumSize(wrapper.getPreferredSize());
-                }
-
-
-                eastPanel.revalidate();
-                eastPanel.repaint();
-                
-            }
-        });
 
         // Set up UI update timer (16ms = ~60fps)
         uiUpdateTimer = new Timer(16, e -> updateDisplay());
@@ -1352,10 +525,657 @@ public class Gamewindow extends JFrame {
         floatingLabelTimer.start();
 
         setVisible(true);
-        System.out.println("westPanel bounds: " + westPanel.getBounds());
-        System.out.println("centerPanel bounds: " + centerPanel.getBounds());
-        System.out.println("eastPanel bounds: " + eastPanel.getBounds());
+
+        SwingUtilities.invokeLater(() -> {
+            Insets insets = getInsets(); // top, left, bottom, right
+            Dimension screenSize2 = Toolkit.getDefaultToolkit().getScreenSize();
+
+            int contentWidth = screenSize2.width - insets.left - insets.right;
+            int contentHeight = screenSize2.height - insets.top - insets.bottom;
+
+            System.out.println("Adjusted for insets: " + contentWidth + " x " + contentHeight);
+        });
+    }
+
+    private JPanel createWestPanel() {
+        // Create the west panel with GridBagLayout
+        JPanel westPanel = new JPanel(new GridBagLayout());
+        westPanel.setBackground(new Color(0xFFFFFF));
         
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.BOTH;
+        gbc.weightx = 1.0;
+        
+        // === Row A (Title) ===
+        Image westBgImage1 = new ImageIcon("assets/west_row1.png").getImage();
+        ImagePanel rowAWest = new ImagePanel(westBgImage1);
+        rowAWest.setLayout(new GridBagLayout());
+        
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.weighty = 0.1125; // 11.25% height
+        westPanel.add(rowAWest, gbc);
+        
+        // === Row B (3 + 5 Buttons) ===
+        JPanel rowBWest = new JPanel(new GridLayout(2, 1));
+        rowBWest.setBackground(new Color(0xA7EAA7));
+        
+        JPanel rowBTop = new JPanel(new GridLayout(1, 3));
+        rowBTop.setBackground(new Color(0xA7EAA7));
+        for (int i = 0; i < 3; i++) {
+            JButton btn = new JButton("Top " + (i + 1));
+            btn.setBackground(new Color(0xEAE77D));
+            btn.addActionListener(e -> { new ChaosElements(gamestate).setUp(); }); // TEMPORARY SETUP GOLDEN COOKIE
+            topButtons.add(btn);
+            rowBTop.add(btn);
+        }
+        
+        JPanel rowBBottom = new JPanel(new GridLayout(1, 5));
+        rowBBottom.setBackground(new Color(0xA7EAA7));
+        for (int i = 0; i < 5; i++) {
+            JButton btn = new JButton("Bottom " + (i + 1));
+            btn.setBackground(new Color(0xF7F4B7));
+            bottomButtons.add(btn);
+            rowBBottom.add(btn);
+        }
+        
+        rowBWest.add(rowBTop);
+        rowBWest.add(rowBBottom);
+        
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.weighty = 0.1125; // 11.25% height
+        westPanel.add(rowBWest, gbc);
+        
+        // === Row C (Scrollable Purchased Panel) ===
+        JPanel purchasedPanel = new JPanel(new GridLayout(purchasedUpgrades, 1));
+        purchasedPanel.setBackground(new Color(0x7B89C4));
+        
+        for (int i = 0; i < purchasedUpgrades; i++) {
+            JLabel lbl = new JLabel("Purchased Upgrade " + (i + 1), SwingConstants.CENTER);
+            lbl.setOpaque(true);
+            lbl.setBackground(new Color(0xF7F4B7));
+            purchasedLabels.add(lbl);
+            
+            JPanel wrapper = new JPanel(new BorderLayout());
+            wrapper.setOpaque(false);
+            wrapper.add(lbl, BorderLayout.CENTER);
+            purchasedPanel.add(wrapper);
+        }
+        
+        JScrollPane scrollPurchased = new JScrollPane(purchasedPanel);
+        scrollPurchased.getViewport().setBackground(new Color(0xE59C9C));
+        
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        gbc.weighty = 0.775; // 77.5% height
+        westPanel.add(scrollPurchased, gbc);
+        
+        // Add resize listener to handle component sizing
+        westPanel.addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                int panelWidth = westPanel.getWidth();
+                int panelHeight = westPanel.getHeight();
+                
+                // Update button sizes
+                for (JButton btn : topButtons) {
+                    btn.setPreferredSize(new Dimension(panelWidth / 3, (int)(panelHeight * 0.05625)));
+                }
+                
+                for (JButton btn : bottomButtons) {
+                    btn.setPreferredSize(new Dimension(panelWidth / 5, (int)(panelHeight * 0.05625)));
+                }
+                
+                for (JLabel lbl : purchasedLabels) {
+                    lbl.setPreferredSize(new Dimension(panelWidth, (int)(panelHeight * 0.25)));
+                }
+                
+                westPanel.revalidate();
+                westPanel.repaint();
+            }
+        });
+
+        return westPanel;
+    }
+
+    private JPanel createCenterPanel() {
+        // Create the center panel with GridBagLayout
+        JPanel centerPanel = new JPanel(new GridBagLayout());
+        centerPanel.setBackground(new Color(0xFFFFFF));
+        
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.BOTH;
+        gbc.gridx = 0;
+        gbc.weightx = 1.0;
+        
+        // === Row A (Header) ===
+        Image bgImage0 = new ImageIcon("assets/center_rowACenter_1.png").getImage();
+        ImagePanel rowACenter = new ImagePanel(bgImage0);
+        rowACenter.setLayout(new GridBagLayout());
+        centerRows.add(rowACenter);
+        
+        GridBagConstraints rowAGbc = new GridBagConstraints();
+        rowAGbc.fill = GridBagConstraints.BOTH;
+        rowAGbc.weightx = 1.0;
+        rowAGbc.weighty = 1.0;
+        
+        // Add horizontal padding
+        rowAGbc.gridx = 0;
+        rowAGbc.gridy = 0;
+        rowAGbc.weightx = 0.014; // 1.4% width
+        rowACenter.add(Box.createHorizontalStrut(1), rowAGbc);
+        
+        // === Column 1 (2 Buttons) ===
+        JPanel column1A = new JPanel(new GridLayout(2, 1));
+        column1A.setOpaque(false);
+        
+        Image staticButtonImage1 = new ImageIcon("assets/center_row1_columnA1.png").getImage();
+        StaticImageButton column1AButton1 = new StaticImageButton("Options", staticButtonImage1);
+        column1AButton1.addActionListener(e -> System.out.println("Button 1 clicked"));
+        firstRowButtons.add(column1AButton1);
+        
+        JPanel button1Wrapper = new JPanel(new BorderLayout());
+        button1Wrapper.setOpaque(false);
+        button1Wrapper.add(column1AButton1, BorderLayout.CENTER);
+        column1A.add(button1Wrapper);
+        
+        Image staticButtonImage2 = new ImageIcon("assets/center_row1_columnA2.png").getImage();
+        StaticImageButton column1AButton2 = new StaticImageButton("Options", staticButtonImage2);
+        column1AButton2.addActionListener(e -> System.out.println("Button 2 clicked"));
+        firstRowButtons.add(column1AButton2);
+        
+        JPanel button2Wrapper = new JPanel(new BorderLayout());
+        button2Wrapper.setOpaque(false);
+        button2Wrapper.add(column1AButton2, BorderLayout.CENTER);
+        column1A.add(button2Wrapper);
+        
+        rowAGbc.gridx = 1;
+        rowAGbc.weightx = 0.16875; // 16.875% width
+        rowACenter.add(column1A, rowAGbc);
+        
+        // === Column 2 (Middle Label) ===
+        Image bgImage2 = new ImageIcon("assets/center_row1_columnB1.png").getImage();
+        ImagePanel column2A = new ImagePanel(bgImage2);
+        column2A.setOpaque(false);
+        
+        rowAGbc.gridx = 2;
+        rowAGbc.weightx = 0.6065; // 60.65% width
+        rowACenter.add(column2A, rowAGbc);
+        
+        // === Column 3 (2 Buttons) ===
+        JPanel column3A = new JPanel(new GridLayout(2, 1));
+        column3A.setOpaque(false);
+        
+        Image staticButtonImage3 = new ImageIcon("assets/center_row1_columnC1.png").getImage();
+        StaticImageButton column3AButton1 = new StaticImageButton("Options", staticButtonImage3);
+        column3AButton1.addActionListener(e -> System.out.println("Button 3 clicked"));
+        firstRowButtons.add(column3AButton1);
+        
+        JPanel button3Wrapper = new JPanel(new BorderLayout());
+        button3Wrapper.setOpaque(false);
+        button3Wrapper.add(column3AButton1, BorderLayout.CENTER);
+        column3A.add(button3Wrapper);
+        
+        Image staticButtonImage4 = new ImageIcon("assets/center_row1_columnC2.png").getImage();
+        StaticImageButton column3AButton2 = new StaticImageButton("Options", staticButtonImage4);
+        column3AButton2.addActionListener(e -> System.out.println("Button 4 clicked"));
+        firstRowButtons.add(column3AButton2);
+        
+        JPanel button4Wrapper = new JPanel(new BorderLayout());
+        button4Wrapper.setOpaque(false);
+        button4Wrapper.add(column3AButton2, BorderLayout.CENTER);
+        column3A.add(button4Wrapper);
+        
+        rowAGbc.gridx = 3;
+        rowAGbc.weightx = 0.16875; // 16.875% width
+        rowACenter.add(column3A, rowAGbc);
+        
+        // Add horizontal padding
+        rowAGbc.gridx = 4;
+        rowAGbc.weightx = 0.014; // 1.4% width
+        rowACenter.add(Box.createHorizontalStrut(1), rowAGbc);
+        
+        gbc.gridy = 0;
+        gbc.weighty = 0.15; // 15% height
+        centerPanel.add(rowACenter, gbc);
+        
+        // === Row B (Content) ===
+        Image bgImage = new ImageIcon("assets/main_background_1.png").getImage();
+        ImagePanel rowBCenter = new ImagePanel(bgImage);
+        rowBCenter.setLayout(new GridBagLayout());
+        centerRows.add(rowBCenter);
+        
+        GridBagConstraints rowBGbc = new GridBagConstraints();
+        rowBGbc.fill = GridBagConstraints.HORIZONTAL;
+        rowBGbc.gridx = 0;
+        rowBGbc.anchor = GridBagConstraints.CENTER;
+        rowBGbc.weightx = 1.0;
+        
+        // Add vertical padding
+        rowBGbc.gridy = 0;
+        rowBGbc.weighty = 0.0375; // 3.75% height
+        rowBCenter.add(Box.createVerticalStrut(1), rowBGbc);
+        
+        // Row 1 (Bakery name)
+        JPanel row1B = new JPanel(new BorderLayout());
+        row1B.setOpaque(false);
+        
+        Image staticButtonImage5 = new ImageIcon("assets/center_row2_rowA.png").getImage();
+        StaticImageButton row1BButton = new StaticImageButton("Options", staticButtonImage5);
+        row1BButton.setLayout(new GridBagLayout());
+        
+        GridBagConstraints gbcName = new GridBagConstraints();
+        gbcName.gridx = 0;
+        gbcName.gridy = 0;
+        gbcName.anchor = GridBagConstraints.CENTER;
+        gbcName.insets = new Insets(9, 0, 0, 0);
+        
+        JLabel bakeryNameLabel = new JLabel("Cookie Clicker's Bakery");
+        bakeryNameLabel.setForeground(Color.WHITE);
+        bakeryNameLabel.setFont(new Font("Garamond", Font.BOLD, 24));
+        row1BButton.add(bakeryNameLabel, gbcName);
+        
+        row1BButton.addActionListener(e -> {
+            String input = JOptionPane.showInputDialog(
+                row1BButton,
+                "Enter your bakery's name (max " + maxNameLength + " characters):",
+                bakeryNameLabel.getText().replace("'s Bakery", "")
+            );
+            if (input != null) {
+                input = input.trim();
+                if (!input.isEmpty()) {
+                    if (input.length() > maxNameLength) {
+                        JOptionPane.showMessageDialog(row1BButton, "Name cannot exceed " + maxNameLength + " characters.");
+                        return;
+                    }
+                    bakeryNameLabel.setText(input + "'s Bakery");
+                }
+            }
+        });
+        
+        row1B.add(row1BButton, BorderLayout.CENTER);
+        
+        rowBGbc.gridy = 1;
+        rowBGbc.weighty = 0.075; // 7.5% height
+        rowBCenter.add(row1B, rowBGbc);
+        secondRowPanels.add(row1B);
+        
+        // Row 2 (Cookie button)
+        JPanel row2B = new JPanel(new BorderLayout());
+        row2B.setOpaque(false);
+        
+        Image img = new ImageIcon("assets/main_cookie_3.png").getImage();
+        RotatingImageButton actionButtonrow2B = new RotatingImageButton(null, img);
+        
+        actionButtonrow2B.addActionListener(e -> {
+            gamestate.Click();
+            updateDisplay();
+            
+            Point screenPoint = MouseInfo.getPointerInfo().getLocation();
+            Point framePoint = getLayeredPane().getLocationOnScreen();
+            int clickX = screenPoint.x - framePoint.x;
+            int clickY = screenPoint.y - framePoint.y;
+            
+            showFloatingText(clickX, clickY, "+" + NumberFormatter.formatNumber(gamestate.getClickingPower()));
+        });
+        
+        row2B.add(actionButtonrow2B, BorderLayout.CENTER);
+        
+        rowBGbc.gridy = 2;
+        rowBGbc.weighty = 0.475; // 47.5% height
+        rowBCenter.add(row2B, rowBGbc);
+        secondRowPanels.add(row2B);
+        
+        // Row 3 (Cookie count)
+        ImagePanel row3B = new ImagePanel(new ImageIcon("assets/center_row2_rowC.png").getImage());
+        row3B.setLayout(new GridBagLayout());
+        
+        GridBagConstraints gbcBottom = new GridBagConstraints();
+        gbcBottom.gridx = 0;
+        gbcBottom.gridy = 0;
+        gbcBottom.weighty = 1.0;
+        gbcBottom.weightx = 1.0;
+        gbcBottom.insets = new Insets(16, 0, 0, 0);
+        gbcBottom.anchor = GridBagConstraints.SOUTH;
+        
+        cookieCountLabel = new JLabel("0.0");
+        row3B.add(cookieCountLabel, gbcBottom);
+        
+        rowBGbc.gridy = 3;
+        rowBGbc.weighty = 0.075; // 7.5% height
+        rowBCenter.add(row3B, rowBGbc);
+        secondRowPanels.add(row3B);
+        
+        // Row 4 (Cookie unit)
+        ImagePanel row4B = new ImagePanel(new ImageIcon("assets/center_row2_rowD.png").getImage());
+        row4B.setLayout(new GridBagLayout());
+        
+        GridBagConstraints gbcTop1 = new GridBagConstraints();
+        gbcTop1.gridx = 0;
+        gbcTop1.gridy = 0;
+        gbcTop1.weighty = 1.0;
+        gbcTop1.weightx = 1.0;
+        gbcTop1.anchor = GridBagConstraints.NORTH;
+        
+        cookieUnitLabel = new JLabel("Cookies");
+        row4B.add(cookieUnitLabel, gbcTop1);
+        
+        rowBGbc.gridy = 4;
+        rowBGbc.weighty = 0.075; // 7.5% height
+        rowBCenter.add(row4B, rowBGbc);
+        secondRowPanels.add(row4B);
+        
+        // Row 5 (CPS)
+        ImagePanel row5B = new ImagePanel(new ImageIcon("assets/center_row2_rowE.png").getImage());
+        row5B.setLayout(new GridBagLayout());
+        
+        GridBagConstraints gbcTop = new GridBagConstraints();
+        gbcTop.gridx = 0;
+        gbcTop.gridy = 0;
+        gbcTop.weighty = 1.0;
+        gbcTop.weightx = 1.0;
+        gbcTop.insets = new Insets(0, 0, 20, 0);
+        gbcTop.anchor = GridBagConstraints.NORTH;
+        
+        cpsLabel = new JLabel("0.0 per second");
+        row5B.add(cpsLabel, gbcTop);
+        
+        rowBGbc.gridy = 5;
+        rowBGbc.weighty = 0.075; // 7.5% height
+        rowBCenter.add(row5B, rowBGbc);
+        secondRowPanels.add(row5B);
+        
+        // Add vertical padding
+        rowBGbc.gridy = 6;
+        rowBGbc.weighty = 0.0375; // 3.75% height
+        rowBCenter.add(Box.createVerticalStrut(1), rowBGbc);
+        
+        // Add vertical glue to absorb extra space
+        rowBGbc.gridy = 7;
+        rowBGbc.weighty = 0.15; // 15% height
+        rowBCenter.add(Box.createVerticalGlue(), rowBGbc);
+        
+        gbc.gridy = 1;
+        gbc.weighty = 0.85; // 85% height
+        centerPanel.add(rowBCenter, gbc);
+        
+        // Add resize listener to handle component sizing
+        centerPanel.addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                int panelWidth = centerPanel.getWidth();
+                int panelHeight = centerPanel.getHeight();
+                
+                // Calculate row heights
+                int rowAHeight = (int)(panelHeight * 0.15);
+                int rowBHeight = (int)(panelHeight * 0.85);
+                
+                // Calculate column widths for Row A
+                int rowAColumnAWidth = (int)(panelWidth * 0.16875);
+                int rowAColumnBWidth = (int)(panelWidth * 0.6065);
+                
+                // Update button sizes for Row A
+                for (JButton btn : firstRowButtons) {
+                    btn.setPreferredSize(new Dimension(rowAColumnAWidth, (int)(panelHeight * 0.075)));
+                }
+                
+                // Calculate sizes for Row B elements
+                int rowBWidth = (int)(panelWidth * 0.6625);
+                
+                // Update Row B elements
+                row1BButton.setPreferredSize(new Dimension(rowBWidth, (int)(panelHeight * 0.075)));
+                actionButtonrow2B.setPreferredSize(new Dimension((int)(rowBWidth * 0.9), (int)(rowBHeight * 0.475 * 0.9)));
+                
+                // Update fonts
+                int baseFontSize = (int)(panelHeight * 0.030);
+                Font scaledFont1 = new Font("Garamond", Font.BOLD, baseFontSize);
+                Font scaledFont2 = new Font("Garamond", Font.BOLD, (int)(baseFontSize * 1.5));
+                Font scaledFont3 = new Font("Garamond", Font.BOLD, (int)(baseFontSize * 0.8));
+                Font scaledFont4 = new Font("Garamond", Font.BOLD, (int)(baseFontSize * 1.3));
+                
+                for (JButton btn : firstRowButtons) {
+                    btn.setFont(scaledFont1);
+                    btn.setForeground(Color.BLACK);
+                }
+                
+                Color fontColor = Color.WHITE;
+                
+                row1BButton.setBaseFont(scaledFont4);
+                cookieCountLabel.setFont(scaledFont2);
+                cookieUnitLabel.setFont(scaledFont2);
+                cpsLabel.setFont(scaledFont3);
+                
+                bakeryNameLabel.setForeground(fontColor);
+                cookieCountLabel.setForeground(fontColor);
+                cookieUnitLabel.setForeground(fontColor);
+                cpsLabel.setForeground(fontColor);
+                
+                actionButtonrow2B.setFont(scaledFont2);
+                actionButtonrow2B.setForeground(fontColor);
+                
+                centerPanel.revalidate();
+                centerPanel.repaint();
+            }
+        });
+        
+        return centerPanel;
+    }
+
+    private JPanel createEastPanel() {
+        // Create the east panel with GridBagLayout
+        JPanel eastPanel = new JPanel(new GridBagLayout());
+        eastPanel.setBackground(new Color(0xFFFFFF));
+        
+        // Set a fixed width for the east panel (25% of frame width)
+        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        int width = (int) (screenSize.width * 0.75);
+        int eastPanelWidth = (int) (width * 0.25);
+        
+        // Set preferred and maximum size to prevent infinite stretching
+        eastPanel.setPreferredSize(new Dimension(eastPanelWidth, 0));
+        eastPanel.setMaximumSize(new Dimension(eastPanelWidth, Integer.MAX_VALUE));
+        
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.BOTH;
+        gbc.gridx = 0;
+        gbc.weightx = 1.0;
+        
+        // === Row A (Title) ===
+        Image eastBgImage1 = new ImageIcon("assets/east_row1.png").getImage();
+        ImagePanel rowAEast = new ImagePanel(eastBgImage1);
+        rowAEast.setLayout(new GridBagLayout());
+        
+        gbc.gridy = 0;
+        gbc.weighty = 0.1125; // 11.25% height
+        eastPanel.add(rowAEast, gbc);
+        
+        // === Row B (2 rows x 5 columns) ===
+        Image rowBEastbgImage = new ImageIcon("assets/east_row2.png").getImage();
+        ImagePanel rowBEast = new ImagePanel(rowBEastbgImage);
+        rowBEast.setLayout(new GridLayout(2, 1));
+        
+        // First row of upgrades
+        JPanel upgradeRow1 = new JPanel(new GridLayout(1, 5));
+        upgradeRow1.setOpaque(false);
+        
+        for (int i = 0; i < 5; i++) {
+            JButton upgrade = new JButton("Upgrade " + (i + 1));
+            upgrade.setBackground(new Color(0xEAE77D));
+            toolButtons.add(upgrade);
+            upgradeRow1.add(upgrade);
+        }
+        
+        // Second row of upgrades
+        JPanel upgradeRow2 = new JPanel(new GridLayout(1, 5));
+        upgradeRow2.setOpaque(false);
+        
+        for (int i = 5; i < 10; i++) {
+            JButton upgrade = new JButton("Upgrade " + (i + 1));
+            upgrade.setBackground(new Color(0xEAE77D));
+            toolButtons.add(upgrade);
+            upgradeRow2.add(upgrade);
+        }
+        
+        rowBEast.add(upgradeRow1);
+        rowBEast.add(upgradeRow2);
+        
+        gbc.gridy = 1;
+        gbc.weighty = 0.15; // 15% height
+        eastPanel.add(rowBEast, gbc);
+        
+        // === Row C (1 row x 5 columns with different widths) ===
+        Image rowCEastImage = new ImageIcon("assets/east_row3.png").getImage();
+        ImagePanel rowCEast = new ImagePanel(rowCEastImage);
+        rowCEast.setLayout(new GridBagLayout());
+        
+        GridBagConstraints rowCGbc = new GridBagConstraints();
+        rowCGbc.fill = GridBagConstraints.BOTH;
+        rowCGbc.gridy = 0;
+        rowCGbc.weighty = 1.0;
+        
+        // Column 1 (Buy/Sell)
+        Image buyImage = new ImageIcon("assets/east_row3_column1_Buy.png").getImage();
+        Image sellImage = new ImageIcon("assets/east_row3_column1_Sell.png").getImage();
+        
+        ImagePanel rowCEast_column1 = new ImagePanel(buyImage);
+        rowCEast_column1.setLayout(new BorderLayout());
+        
+        JLabel modeLabel = new JLabel("Buy", SwingConstants.CENTER);
+        rowCEast_column1.add(modeLabel, BorderLayout.CENTER);
+        modeLabel.setVisible(false);
+        
+        rowCGbc.gridx = 0;
+        rowCGbc.weightx = 0.355; // 35.5% width
+        rowCEast.add(rowCEast_column1, rowCGbc);
+        
+        // Column 2 (1)
+        Image rowCEast_column2_button = new ImageIcon("assets/east_row3_column2.png").getImage();
+        StaticImageToggleButton rowCEast_column2 = new StaticImageToggleButton("1", rowCEast_column2_button);
+        
+        rowCGbc.gridx = 1;
+        rowCGbc.weightx = 0.1775; // 17.75% width
+        rowCEast.add(rowCEast_column2, rowCGbc);
+        
+        // Column 3 (10)
+        Image rowCEast_column3_button = new ImageIcon("assets/east_row3_column3.png").getImage();
+        StaticImageToggleButton rowCEast_column3 = new StaticImageToggleButton("10", rowCEast_column3_button);
+        
+        rowCGbc.gridx = 2;
+        rowCGbc.weightx = 0.1775; // 17.75% width
+        rowCEast.add(rowCEast_column3, rowCGbc);
+        
+        // Column 4 (100)
+        Image rowCEast_column4_button = new ImageIcon("assets/east_row3_column4.png").getImage();
+        StaticImageToggleButton rowCEast_column4 = new StaticImageToggleButton("100", rowCEast_column4_button);
+        
+        rowCGbc.gridx = 3;
+        rowCGbc.weightx = 0.1775; // 17.75% width
+        rowCEast.add(rowCEast_column4, rowCGbc);
+        
+        // Column 5 (Switch)
+        Image rowCEast_column5_button = new ImageIcon("assets/east_row3_column5.png").getImage();
+        StaticImageButton rowCEast_column5 = new StaticImageButton("S", rowCEast_column5_button);
+        
+        rowCGbc.gridx = 4;
+        rowCGbc.weightx = 0.1125; // 11.25% width
+        rowCEast.add(rowCEast_column5, rowCGbc);
+        
+        // Set up button group and listeners
+        ButtonGroup quantityGroup = new ButtonGroup();
+        quantityGroup.add(rowCEast_column2);
+        quantityGroup.add(rowCEast_column3);
+        quantityGroup.add(rowCEast_column4);
+        
+        Color selectedColor = new Color(0xC1FF72); // light green
+        Color defaultColor = new Color(0xEAE77D);  // base yellow
+        
+        ActionListener quantityListener = e -> {
+            AbstractButton source = (AbstractButton) e.getSource();
+            
+            // Set Global quantity
+            if (source == rowCEast_column2) Global.setQuantity(1);
+            else if (source == rowCEast_column3) Global.setQuantity(10);
+            else if (source == rowCEast_column4) Global.setQuantity(100);
+            
+            // Update background colors
+            rowCEast_column2.setBackground(rowCEast_column2.isSelected() ? selectedColor : defaultColor);
+            rowCEast_column3.setBackground(rowCEast_column3.isSelected() ? selectedColor : defaultColor);
+            rowCEast_column4.setBackground(rowCEast_column4.isSelected() ? selectedColor : defaultColor);
+        };
+        
+        rowCEast_column2.addActionListener(quantityListener);
+        rowCEast_column3.addActionListener(quantityListener);
+        rowCEast_column4.addActionListener(quantityListener);
+        
+        rowCEast_column5.addActionListener(e -> {
+            if ("Buy".equalsIgnoreCase(modeLabel.getText())) {
+                modeLabel.setText("Sell");
+                rowCEast_column1.setImage(sellImage);
+                Global.setMode("SELL");
+            } else {
+                modeLabel.setText("Buy");
+                rowCEast_column1.setImage(buyImage);
+                Global.setMode("BUY");
+            }
+        });
+        
+        // Add to tracking lists
+        genLabel.add(modeLabel);
+        genToggleButtons.add(rowCEast_column2);
+        genToggleButtons.add(rowCEast_column3);
+        genToggleButtons.add(rowCEast_column4);
+        genButtons.add(rowCEast_column5);
+        
+        gbc.gridy = 2;
+        gbc.weighty = 0.05; // 5% height
+        eastPanel.add(rowCEast, gbc);
+        
+        // === Row D (Scrollable available upgrades) ===
+        Image rowDEastImage = new ImageIcon("assets/east_row5.png").getImage();
+        rowDEast = new ImagePanel(rowDEastImage);
+        rowDEast.setLayout(new GridLayout(0, 1)); // Dynamic row count
+        
+        JScrollPane scrollableUpgrades = new JScrollPane(rowDEast);
+        scrollableUpgrades.getViewport().setBackground(new Color(0xE59C9C));
+        
+        gbc.gridy = 3;
+        gbc.weighty = 0.6875; // 68.75% height
+        eastPanel.add(scrollableUpgrades, gbc);
+        
+        // Add resize listener to handle component sizing
+        eastPanel.addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                int panelWidth = eastPanel.getWidth();
+                int panelHeight = eastPanel.getHeight();
+                
+                // Update upgrade button dimensions
+                upgradeButtonWidth = panelWidth;
+                upgradeButtonHeight = (int)(panelHeight * 0.1);
+                
+                // Resize upgrade wrappers
+                for (JPanel wrapper : upgradeWrappers) {
+                    wrapper.setPreferredSize(new Dimension(upgradeButtonWidth, upgradeButtonHeight));
+                    wrapper.setMinimumSize(new Dimension(upgradeButtonWidth, upgradeButtonHeight));
+                }
+                
+                // Resize upgrade buttons in Row B
+                int upgradeBtnHeight = (int)(panelHeight * 0.075);
+                int upgradeBtnWidth = (int)(panelWidth * 0.2);
+                
+                for (JButton btn : toolButtons) {
+                    btn.setPreferredSize(new Dimension(upgradeBtnWidth, upgradeBtnHeight));
+                    btn.setMinimumSize(btn.getPreferredSize());
+                    btn.setMaximumSize(btn.getPreferredSize());
+                }
+                
+                eastPanel.revalidate();
+                eastPanel.repaint();
+            }
+        });
+        
+        return eastPanel;
     }
 
     // Method to add an upgrade to the UI
@@ -1503,7 +1323,7 @@ public class Gamewindow extends JFrame {
     }
     
     // Method to update the display with current game state
-        private void updateDisplay() {
+    private void updateDisplay() {
         double amount = gamestate.getAmount();
         double cps = gamestate.GetCPS();
 
