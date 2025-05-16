@@ -291,12 +291,47 @@ class RotatingImageButton extends JButton {
     }
 }
 
-class StaticImagePanel extends JPanel {
+class StaticImagePanelY extends JPanel {
     private Image backgroundImage;
 
-    public StaticImagePanel(Image image) {
+    public StaticImagePanelY(Image image) {
         this.backgroundImage = image;
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+    }
+
+    public void setImage(Image image) {
+        this.backgroundImage = image;
+        repaint();
+    }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+
+        int w = getWidth();
+        int h = getHeight();
+
+        if (backgroundImage != null) {
+            Graphics2D g2d = (Graphics2D) g.create();
+
+            // High-quality rendering
+            g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            // Stretch image to fill the entire panel (no aspect ratio preservation)
+            g2d.drawImage(backgroundImage, 0, 0, w, h, this);
+            g2d.dispose();
+        }
+    }
+}
+
+class StaticImagePanelX extends JPanel {
+    private Image backgroundImage;
+
+    public StaticImagePanelX(Image image) {
+        this.backgroundImage = image;
+        setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
     }
 
     public void setImage(Image image) {
@@ -485,7 +520,7 @@ public class Gamewindow extends JFrame {
 
         // === Row A (Title) ===
         Image WestbgImage1 = new ImageIcon("assets/west_row1.png").getImage();  // Load your background image
-        JPanel rowAWest = new StaticImagePanel(WestbgImage1);  // Use the custom panel
+        JPanel rowAWest = new StaticImagePanelY(WestbgImage1);  // Use the custom panel
         rowAWest.setBackground(new Color(0x39B539));
         rowAWest.setOpaque(false);
         rowAWest.setLayout(new GridBagLayout());  // Add proper layout manager
@@ -531,6 +566,8 @@ public class Gamewindow extends JFrame {
         }
         JScrollPane scrollPurchased = new JScrollPane(purchasedPanel);
         scrollPurchased.getViewport().setBackground(new Color(0xE59C9C));
+
+        // TODO: FIX THE HEIGHT ISSUE
         JPanel purchasedWrapper = new JPanel(new BorderLayout());
         purchasedWrapper.add(scrollPurchased, BorderLayout.CENTER);
         westPanel.add(purchasedWrapper);
@@ -545,16 +582,32 @@ public class Gamewindow extends JFrame {
                 int frameWidth = (getWidth() - 16);
                 int frameHeight = (getHeight() + 24);
 
-                int panelWidth = (int) (frameWidth * 0.25); // 25% width of frame
+                int westPanelWidth = (int) (frameWidth * 0.25); // 25% width of frame
                 int rowAHeight = (int) (frameHeight * 0.1125); // 11.25% height
                 int rowBHeight = (int) (frameHeight * 0.1125);   // 11.25% height
                 int rowCHeight = (int) (frameHeight * 0.775); // 77.5% height
 
+                System.out.println("[DEBUG] WEST PANEL WIDTH: " + westPanelWidth);
+                System.out.println("[DEBUG] WEST PANEL ROW A HEIGHT: " + rowAHeight);
+                System.out.println("[DEBUG] WEST PANEL ROW B HEIGHT: " + rowBHeight);
+                System.out.println("[DEBUG] WEST PANEL ROW C HEIGHT: " + rowCHeight);
+
                 // Set panel & row sizes
-                westPanel.setPreferredSize(new Dimension(panelWidth, frameHeight));
-                rowAWest.setPreferredSize(new Dimension(panelWidth, rowAHeight));
-                rowBWest.setPreferredSize(new Dimension(panelWidth, rowBHeight));
-                purchasedWrapper.setPreferredSize(new Dimension(panelWidth, rowCHeight));
+                westPanel.setPreferredSize(new Dimension(westPanelWidth, frameHeight));
+                westPanel.setMinimumSize(westPanel.getPreferredSize());
+                westPanel.setMaximumSize(westPanel.getPreferredSize());
+
+                rowAWest.setPreferredSize(new Dimension(westPanelWidth, rowAHeight));
+                rowAWest.setMinimumSize(rowAWest.getPreferredSize());
+                rowAWest.setMaximumSize(rowAWest.getPreferredSize());
+
+                rowBWest.setPreferredSize(new Dimension(westPanelWidth, rowBHeight));
+                rowBWest.setMinimumSize(rowBWest.getPreferredSize());
+                rowBWest.setMaximumSize(rowBWest.getPreferredSize());
+
+                purchasedWrapper.setPreferredSize(new Dimension(westPanelWidth, rowCHeight));
+                purchasedWrapper.setMinimumSize(purchasedWrapper.getPreferredSize());
+                purchasedWrapper.setMaximumSize(purchasedWrapper.getPreferredSize());
 
                 // Resize top buttons (Row B - Top)
                 int topBtnWidth = (int) (frameWidth * 0.25);
@@ -591,8 +644,7 @@ public class Gamewindow extends JFrame {
         // === 1st Row (Header) ===
 
         Image bgImage0 = new ImageIcon("assets/center_rowACenter_1.png").getImage();  // Load your background image
-        JPanel rowACenter = new StaticImagePanel(bgImage0);  // Use the custom panel
-        rowACenter.setLayout(new BoxLayout(rowACenter, BoxLayout.X_AXIS));
+        JPanel rowACenter = new StaticImagePanelX(bgImage0);  // Use the custom panel
         rowACenter.setBackground(new Color(0xDBD221));
         rowACenter.setOpaque(false);
         centerRows.add(rowACenter);
@@ -636,7 +688,7 @@ public class Gamewindow extends JFrame {
         // === 2nd Row (Content) ===
         // We'll use a panel with BoxLayout for the second row
         Image bgImage2 = new ImageIcon("assets/center_row1_columnB1.png").getImage();  // Load your background image
-        JPanel column2A = new StaticImagePanel(bgImage2);  // Use the custom panel
+        JPanel column2A = new StaticImagePanelY(bgImage2);  // Use the custom panel
         column2A.setBackground(new Color(0xE59C9C));
         column2A.setOpaque(false);
         rowACenter.add(column2A);
@@ -680,7 +732,7 @@ public class Gamewindow extends JFrame {
         // === 2nd Row (Content) ===
         // We'll use a panel with BoxLayout for the second row
         Image bgImage = new ImageIcon("assets/main_background_1.png").getImage();  // Load your background image
-        JPanel rowBCenter = new StaticImagePanel(bgImage);  // Use the custom panel
+        JPanel rowBCenter = new StaticImagePanelY(bgImage);  // Use the custom panel
         rowBCenter.setBackground(new Color(0xE59C9C));
         centerRows.add(rowBCenter);
 
@@ -763,7 +815,7 @@ public class Gamewindow extends JFrame {
         secondRowPanels.add(row2B);
 
         Image row3BImage = new ImageIcon("assets/center_row2_rowC.png").getImage();  // Load your background image
-        JPanel row3B = new StaticImagePanel(row3BImage);  // Use the custom panel
+        JPanel row3B = new StaticImagePanelY(row3BImage);  // Use the custom panel
         row3B.setBackground(new Color(0xE59C9C));
         row3B.setAlignmentX(Component.CENTER_ALIGNMENT);
         row3B.setOpaque(false);
@@ -784,7 +836,7 @@ public class Gamewindow extends JFrame {
         secondRowPanels.add(row3B);
 
         Image row4BImage = new ImageIcon("assets/center_row2_rowD.png").getImage();  // Load your background image
-        JPanel row4B = new StaticImagePanel(row4BImage);  // Use the custom panel
+        JPanel row4B = new StaticImagePanelY(row4BImage);  // Use the custom panel
         
         row4B.setBackground(new Color(0xE59C9C));
         row4B.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -805,7 +857,7 @@ public class Gamewindow extends JFrame {
         secondRowPanels.add(row4B);
 
         Image row5BImage = new ImageIcon("assets/center_row2_rowE.png").getImage();  // Load your background image
-        JPanel row5B = new StaticImagePanel(row5BImage);  // Use the custom panel
+        JPanel row5B = new StaticImagePanelY(row5BImage);  // Use the custom panel
 
         row5B.setBackground(new Color(0xE59C9C));
         row5B.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -967,7 +1019,7 @@ public class Gamewindow extends JFrame {
 
         // === Row A (Title) ===
         Image EastbgImage1 = new ImageIcon("assets/east_row1.png").getImage();  // Load your background image
-        JPanel rowAEast = new StaticImagePanel(EastbgImage1);  // Use the custom panel
+        JPanel rowAEast = new StaticImagePanelY(EastbgImage1);  // Use the custom panel
         rowAEast.setBackground(new Color(0x39B539));
         rowAEast.setOpaque(false);
         rowAEast.setLayout(new GridBagLayout());  // Add proper layout manager
@@ -975,7 +1027,7 @@ public class Gamewindow extends JFrame {
 
         // === Row B (2 rows x 5 columns using BoxLayout) ===
         Image rowBEastbgImage = new ImageIcon("assets/east_row2.png").getImage();  // Load your background image
-        JPanel rowBEast = new StaticImagePanel(rowBEastbgImage);  // Use the custom panel
+        JPanel rowBEast = new StaticImagePanelY(rowBEastbgImage);  // Use the custom panel
         rowBEast.setOpaque(false);
         rowBEast.setBackground(new Color(0x601818));
 
@@ -1045,15 +1097,17 @@ public class Gamewindow extends JFrame {
         eastPanel.add(rowBEast);
 
         // === Row C (1 row x 5 columns with different widths) ===
-        JPanel rowCEast = new JPanel();
-        rowCEast.setLayout(new BoxLayout(rowCEast, BoxLayout.X_AXIS));
+        // TODO: FIX THE BACKGROUND IMAGE NOT SHOWING
+        Image rowCEastImage = new ImageIcon("assets/east_row3.png").getImage();  // Load your background image
+        JPanel rowCEast = new StaticImagePanelX(rowCEastImage);  // Use the custom panel
         rowCEast.setBackground(new Color(0xA7EAA7));
+        rowCEast.setOpaque(false);
 
         // Create label and buttons
         Image buyImage = new ImageIcon("assets/east_row3_column1_Buy.png").getImage();
         Image sellImage = new ImageIcon("assets/east_row3_column1_Sell.png").getImage();
 
-        StaticImagePanel rowCEast_column1 = new StaticImagePanel(buyImage);
+        StaticImagePanelY rowCEast_column1 = new StaticImagePanelY(buyImage);
 
         JLabel modeLabel = new JLabel("Buy", SwingConstants.CENTER);
         rowCEast_column1.add(modeLabel); // Add label after layout set
@@ -1148,9 +1202,10 @@ public class Gamewindow extends JFrame {
         eastPanel.add(rowCEast);
 
         // === Row D (Scrollable available upgrades) ===
-        rowDEast = new JPanel(); // this now assigns to the field
-        rowDEast.setLayout(new BoxLayout(rowDEast, BoxLayout.Y_AXIS));
+        Image rowDEastImage = new ImageIcon("assets/east_row5.png").getImage();  // Load your background image
+        JPanel rowDEast = new StaticImagePanelY(rowDEastImage);  // Use the custom panel
         rowDEast.setBackground(new Color(0x7B89C4));
+        //rowDEast.setOpaque(false);
         
         // We'll populate this in the addUpgrade method
         
