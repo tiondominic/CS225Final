@@ -58,7 +58,7 @@ public class Upgrade {
         for (int i = 0; i < quantity; i++) {
             value += baseCost * Math.pow(multiplier, i);
         }
-        return value * 0.25;
+        return value * 0.9;
     }
 
     public String getName(){

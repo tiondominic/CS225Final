@@ -5,7 +5,7 @@ public class GameTick {
     private final Timer timer;
     private long lastTime;
 
-    public GameTick(Gamestate gamestate) {
+    public GameTick(Gamestate gamestate, GoldenCookieCheck GCcheck) {
         lastTime = System.nanoTime();
 
         timer = new Timer(16, (ActionEvent e) -> {
@@ -14,6 +14,7 @@ public class GameTick {
             lastTime = now;
 
             gamestate.tick(deltaTime); 
+            GCcheck.updateCounter(16); // next time to return the value instead of doing this
         });
 
         timer.start();
