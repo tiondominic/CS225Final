@@ -2,13 +2,10 @@ import java.awt.*;
 import java.awt.event.ActionListener;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
-import java.io.File;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-
-import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 
@@ -412,7 +409,6 @@ public class Gamewindow extends JFrame {
         for (int i = 0; i < 3; i++) {
             JButton btn = new JButton("Top " + (i + 1));
             btn.setBackground(new Color(0xEAE77D));
-            btn.addActionListener(e -> { new ChaosElements(gamestate).setUp();}); //TEMPORARY SETUP GOLDEN COOKIE
             topButtons.add(btn); // Store reference
             rowBTop.add(btn);
         }
@@ -611,7 +607,7 @@ public class Gamewindow extends JFrame {
         gbc.insets = new Insets(9, 0, 0, 0); // top, left, bottom, right — pushes label down 10px
 
         // === Bakery name label ===
-        JLabel bakeryNameLabel = new JLabel("Cookie Clicker’s Bakery");
+        JLabel bakeryNameLabel = new JLabel("Cookie Clicker's Bakery");
         bakeryNameLabel.setForeground(Color.WHITE);
         bakeryNameLabel.setFont(new Font("Garamond", Font.BOLD, 24)); // <-- Will be updated in resize
         row1BButton.add(bakeryNameLabel, gbc);
@@ -621,7 +617,7 @@ public class Gamewindow extends JFrame {
             String input = JOptionPane.showInputDialog(
                 row1BButton,
                 "Enter your bakery's name (max " + maxNameLength + " characters):",
-                bakeryNameLabel.getText().replace("’s Bakery", "")
+                bakeryNameLabel.getText().replace("'s Bakery", "")
             );
             System.out.println("Button 1 clicked");
             if (input != null) {
@@ -631,7 +627,7 @@ public class Gamewindow extends JFrame {
                         JOptionPane.showMessageDialog(row1BButton, "Name cannot exceed " + maxNameLength + " characters.");
                         return;
                     }
-                    bakeryNameLabel.setText(input + "’s Bakery");
+                    bakeryNameLabel.setText(input + "'s Bakery");
                 }
             }
         });

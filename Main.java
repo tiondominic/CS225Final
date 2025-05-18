@@ -1,7 +1,11 @@
+
 public class Main {
+    public double counter = 0;
+    public Gamestate gamestate;
     public static void main(String[] args) {
         Gamestate gamestate = new Gamestate(0); 
-        GameTick gameTick = new GameTick(gamestate);
+        GoldenCookieCheck GCheck = new GoldenCookieCheck(gamestate);
+        GameTick gameTick = new GameTick(gamestate, GCheck);
 
         Gamewindow mainwindow = new Gamewindow(gamestate);
         
@@ -17,7 +21,7 @@ public class Main {
         Upgrade shipment = new Upgrade("Shipment", 5100000000L, 260000, gamestate, false);
         Upgrade alchemy_lab = new Upgrade("Alchemy Lab", 75000000000L, 1600000, gamestate, false);
         Upgrade portal = new Upgrade("Portal", 1000000000000L, 10000000, gamestate, false);
-        
+
         mainwindow.addUpgrade(cursor);
         mainwindow.addUpgrade(grandma);
         mainwindow.addUpgrade(farm);
