@@ -14,7 +14,9 @@ public class GameTick {
             lastTime = now;
 
             gamestate.tick(deltaTime); 
-            GCcheck.updateCounter(16);
+            // We don't need to pass a value here since GoldenCookieCheck
+            // calculates its own elapsed time
+            GCcheck.updateCounter(deltaTime);
         });
 
         timer.start();
