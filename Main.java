@@ -1,7 +1,10 @@
 public class Main {
+    public double counter = 0;
+    public Gamestate gamestate;
     public static void main(String[] args) {
         Gamestate gamestate = new Gamestate(100000000000000L); 
-        GameTick gameTick = new GameTick(gamestate);
+        GoldenCookieCheck GCheck = new GoldenCookieCheck(gamestate);
+        GameTick gameTick = new GameTick(gamestate, GCheck);
 
         Gamewindow mainwindow = new Gamewindow(gamestate);
         

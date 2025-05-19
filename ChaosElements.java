@@ -33,5 +33,9 @@ public class ChaosElements {
         GoldenCookieFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         GoldenCookieFrame.setVisible(true);
     }
+
+    public void exit(){
+        GoldenCookieFrame.dispose();
+    }
     
 }

@@ -2,12 +2,12 @@ import java.awt.*;
 import java.awt.event.ActionListener;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
-//import java.io.File;
+
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-//import javax.imageio.ImageIO;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 
@@ -116,11 +116,11 @@ class StaticImageToggleButton extends JToggleButton {
 
         double scale = 1.0;
         if (isPressed) {
-            scale = 0.8;
+            scale = 0.9;
         } else if (isHovered) {
-            scale = 0.95;
+            scale = 0.975;
         } else if (isToggled) {
-            scale = 0.9; // Slight visual feedback for toggled-on
+            scale = 0.95;
         }
 
         currentScale = scale;
@@ -142,6 +142,18 @@ class StaticImageToggleButton extends JToggleButton {
         int y = (buttonHeight - drawHeight) / 2;
 
         g2d.drawImage(image, x, y, drawWidth, drawHeight, this);
+
+        // ⬇️ Apply dark overlay if toggled on (half the height, centered)
+        if (isToggled) {
+            int overlayHeight = (int) (drawHeight * 0.625);
+            int overlayY = y + (drawHeight - overlayHeight) / 2; // center vertically in image area
+
+            g2d.setColor(new Color(0, 0, 0, 100)); // semi-transparent black
+            int arcWidth = 13;
+            int arcHeight = 13;
+            g2d.fillRoundRect(x, overlayY, drawWidth, overlayHeight, arcWidth, arcHeight);
+        }
+
         g2d.dispose();
     }
 }
@@ -332,16 +344,26 @@ class ImagePanel extends JPanel {
 }
 
 class TiledImagePanel extends JPanel {
-    private final Image backgroundImage;
+    private Image backgroundImage;
 
     public TiledImagePanel(Image backgroundImage) {
         this.backgroundImage = backgroundImage;
         this.setOpaque(false);
     }
 
+    public void setImage(Image image) {
+    // If you want to allow changing image dynamically
+    // You could add a check to see if the image really changed, but not mandatory
+        this.backgroundImage = image;
+        repaint();
+}
+
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
+        g.setColor(Color.BLUE);  // Debug: fill blue background
+        g.fillRect(0, 0, getWidth(), getHeight());
+
         if (backgroundImage != null) {
             Graphics2D g2d = (Graphics2D) g.create();
 
@@ -384,53 +406,70 @@ class UpgradePanel extends JPanel {
         this.upgrade = upgrade;
         setLayout(new BorderLayout());
 
-        // Create a panel with GridLayout for the three columns
-        JPanel contentPanel = new JPanel(new GridLayout(1, 3));
+        // Create a panel with GridBagLayout for the three columns
+        JPanel contentPanel = new JPanel(new GridBagLayout());
+        setBackground(new Color(255, 255, 255, 100));  // white with some transparency
         contentPanel.setOpaque(false);
-        
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.BOTH;
+        gbc.gridy = 0;
+        gbc.weighty = 1.0;
+
         // Column 1: Image placeholder (20% width)
         JPanel imagePanel = new JPanel(new BorderLayout());
-        imagePanel.setOpaque(false);
+        imagePanel.setBackground(new Color(50, 80, 150, 255));  // solid background
+        imagePanel.setOpaque(true);
         imageLabel = new JLabel("[IMG]");
         imageLabel.setHorizontalAlignment(SwingConstants.LEFT);
         imageLabel.setBorder(new EmptyBorder(5, 10, 5, 5));
         imagePanel.add(imageLabel, BorderLayout.CENTER);
-        
+
+        gbc.gridx = 0;
+        gbc.weightx = 0.2;
+        contentPanel.add(imagePanel, gbc);
+
         // Column 2: Name and cost (50% width)
         JPanel infoPanel = new JPanel(new GridLayout(2, 1));
+        infoPanel.setBackground(new Color(50, 50, 50, 255));
         infoPanel.setOpaque(false);
+
         nameLabel = new JLabel(upgrade.getName());
         nameLabel.setHorizontalAlignment(SwingConstants.CENTER);
         nameLabel.setFont(nameLabel.getFont().deriveFont(Font.BOLD, 14f));
-        
+
         double cost = upgrade.getCost(Global.getQuantity());
         String formattedCost = NumberFormatter.formatNumber(cost);
         String unit = NumberFormatter.getUnit(cost);
         costLabel = new JLabel("Cost: " + formattedCost + " " + unit);
-
         costLabel.setHorizontalAlignment(SwingConstants.CENTER);
         costLabel.setForeground(RED_TEXT);
-        
+
         infoPanel.add(nameLabel);
         infoPanel.add(costLabel);
-        
+
+        gbc.gridx = 1;
+        gbc.weightx = 0.5;
+        contentPanel.add(infoPanel, gbc);
+
         // Column 3: Owned count (30% width)
         JPanel ownedPanel = new JPanel(new BorderLayout());
-        ownedPanel.setOpaque(false);
+        ownedPanel.setBackground(new Color(0, 0, 0, 150));  // semi-transparent black
+        ownedPanel.setOpaque(true);
+
         ownedLabel = new JLabel(String.valueOf(upgrade.getOwned()));
         ownedLabel.setHorizontalAlignment(SwingConstants.RIGHT);
         ownedLabel.setFont(ownedLabel.getFont().deriveFont(Font.BOLD, 18f));
         ownedLabel.setBorder(new EmptyBorder(5, 5, 5, 10));
         ownedPanel.add(ownedLabel, BorderLayout.CENTER);
-        
-        // Add the three columns to the content panel with appropriate weights
-        contentPanel.add(imagePanel);
-        contentPanel.add(infoPanel);
-        contentPanel.add(ownedPanel);
-        
+
+        gbc.gridx = 2;
+        gbc.weightx = 0.3;
+        contentPanel.add(ownedPanel, gbc);
+
         // Add the content panel to this panel
         add(contentPanel, BorderLayout.CENTER);
-        
+
         // Set initial opacity
         setOpaque(true);
     }
@@ -473,7 +512,7 @@ public class Gamewindow extends JFrame {
     private JLabel cookieCountLabel;
     private JLabel cookieUnitLabel;
     private JLabel cpsLabel;
-    private JPanel rowDEast;
+    private JPanel row2C;
     private int upgradeButtonWidth;
     private int upgradeButtonHeight;
     private List<JPanel> upgradeWrappers = new ArrayList<>();
@@ -527,14 +566,33 @@ public class Gamewindow extends JFrame {
         // Use BorderLayout for the main frame
         setLayout(new BorderLayout());
 
+        int westPanelWidth = (int) (width * 0.25);  // 25% of frame width
+        int eastPanelWidth = (int) (width * 0.25);  // 25% of frame width
+
         // Create the three main panels with GridBagLayout
         JPanel westPanel = createWestPanel();
         JPanel centerPanel = createCenterPanel();
         JPanel eastPanel = createEastPanel();
 
+        // Set fixed widths for all panels
+        westPanel.setPreferredSize(new Dimension(westPanelWidth, height));
+        westPanel.setMinimumSize(new Dimension(westPanelWidth, 0));
+        westPanel.setMaximumSize(new Dimension(westPanelWidth, Integer.MAX_VALUE));
+
+        eastPanel.setPreferredSize(new Dimension(eastPanelWidth, height));
+        eastPanel.setMinimumSize(new Dimension(eastPanelWidth, 0));
+        eastPanel.setMaximumSize(new Dimension(eastPanelWidth, Integer.MAX_VALUE));
+
+        int centerPanelWidth = (int) (width * 0.5); // e.g. 45% of frame width (adjust as needed)
+        centerPanel.setPreferredSize(new Dimension(centerPanelWidth, height));
+        centerPanel.setMinimumSize(new Dimension(centerPanelWidth, 0));
+        centerPanel.setMaximumSize(new Dimension(centerPanelWidth, Integer.MAX_VALUE));
+
         // Add panels to the frame
         add(westPanel, BorderLayout.WEST);
+
         add(centerPanel, BorderLayout.CENTER);
+
         add(eastPanel, BorderLayout.EAST);
 
         // Set up UI update timer (16ms = ~60fps)
@@ -566,10 +624,17 @@ public class Gamewindow extends JFrame {
                 System.out.println("[DEBUG] WINDOW DIMENSIONS: " + currentWidth + "x" + currentHeight);
                 
                 int sidePanelWidth = (int) (currentWidth * 0.25);
+                int centerPanelWidth = (int) (currentWidth * 0.5); // e.g. 45% of frame width (adjust as needed)
 
                 westPanel.setPreferredSize(new Dimension(sidePanelWidth, currentHeight));
                 westPanel.setMinimumSize(new Dimension(sidePanelWidth, currentHeight));
                 westPanel.setMaximumSize(new Dimension(sidePanelWidth, Integer.MAX_VALUE));
+
+                
+                centerPanel.setPreferredSize(new Dimension(centerPanelWidth, currentHeight));
+                centerPanel.setMinimumSize(new Dimension(centerPanelWidth, currentHeight));
+                centerPanel.setMaximumSize(new Dimension(centerPanelWidth, Integer.MAX_VALUE));
+
                 eastPanel.setPreferredSize(new Dimension(sidePanelWidth, currentHeight));
                 eastPanel.setMinimumSize(new Dimension(sidePanelWidth, currentHeight));
                 eastPanel.setMaximumSize(new Dimension(sidePanelWidth, Integer.MAX_VALUE));
@@ -588,6 +653,7 @@ public class Gamewindow extends JFrame {
             int contentHeight = screenSize2.height - insets.top - insets.bottom;
 
             System.out.println("Adjusted for insets: " + contentWidth + " x " + contentHeight);
+            System.out.println("Adjusted for insets centerpanel: " + centerPanelWidth + " x " + contentHeight);
         });
     }
 
@@ -828,6 +894,14 @@ public class Gamewindow extends JFrame {
         // Create the center panel with GridBagLayout
         JPanel centerPanel = new JPanel(new GridBagLayout());
         centerPanel.setBackground(new Color(0xFFFFFF));
+
+        int centerPanelWidth = centerPanel.getWidth();
+        int centerPanelHeight = centerPanel.getHeight();
+        System.out.println("[DEBUG] IN CENTER PANEL DIMENSIONS: " + centerPanelWidth + " x " + centerPanelHeight);
+
+        // Set preferred and maximum size to maintain the 25% scaling
+        centerPanel.setPreferredSize(new Dimension(centerPanelWidth, 0));
+        centerPanel.setMaximumSize(new Dimension(centerPanelWidth, Integer.MAX_VALUE));
         
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.BOTH;
@@ -835,95 +909,95 @@ public class Gamewindow extends JFrame {
         gbc.weightx = 1.0;
         
         // === Row A (Header) ===
-        Image bgImage0 = new ImageIcon("assets/center_rowACenter_1.png").getImage();
-        ImagePanel rowACenter = new ImagePanel(bgImage0);
-        rowACenter.setLayout(new GridBagLayout());
-        centerRows.add(rowACenter);
-        
+        Image bgImage0 = new ImageIcon("assets/center_row1.png").getImage();
+        ImagePanel row1 = new ImagePanel(bgImage0);
+        row1.setLayout(new GridBagLayout());
+        centerRows.add(row1);
+
         GridBagConstraints rowAGbc = new GridBagConstraints();
         rowAGbc.fill = GridBagConstraints.BOTH;
-        rowAGbc.weightx = 1.0;
         rowAGbc.weighty = 1.0;
-        
-        // Add horizontal padding
+
+        // Left glue
         rowAGbc.gridx = 0;
-        rowAGbc.gridy = 0;
-        rowAGbc.weightx = 0.005; // 1.4% width
-        rowACenter.add(Box.createHorizontalStrut(0), rowAGbc);
-        
+        rowAGbc.weightx = 0.01;
+        row1.add(Box.createHorizontalGlue(), rowAGbc);
+
         // === Column 1 (2 Buttons) ===
         JPanel column1A = new JPanel(new GridLayout(2, 1));
         column1A.setOpaque(false);
-        
+
         Image staticButtonImage1 = new ImageIcon("assets/center_row1_columnA1.png").getImage();
         StaticImageButton column1AButton1 = new StaticImageButton("Options", staticButtonImage1);
         column1AButton1.addActionListener(e -> System.out.println("Button 1 clicked"));
         firstRowButtons.add(column1AButton1);
-        
+
         JPanel button1Wrapper = new JPanel(new BorderLayout());
         button1Wrapper.setOpaque(false);
         button1Wrapper.add(column1AButton1, BorderLayout.CENTER);
         column1A.add(button1Wrapper);
-        
+
         Image staticButtonImage2 = new ImageIcon("assets/center_row1_columnA2.png").getImage();
         StaticImageButton column1AButton2 = new StaticImageButton("Options", staticButtonImage2);
         column1AButton2.addActionListener(e -> System.out.println("Button 2 clicked"));
         firstRowButtons.add(column1AButton2);
-        
+
         JPanel button2Wrapper = new JPanel(new BorderLayout());
         button2Wrapper.setOpaque(false);
         button2Wrapper.add(column1AButton2, BorderLayout.CENTER);
         column1A.add(button2Wrapper);
-        
+
         rowAGbc.gridx = 1;
-        rowAGbc.weightx = 0.175; // 16.875% width
-        rowACenter.add(column1A, rowAGbc);
-        
+        rowAGbc.weightx = 0.175; // Was 16.875%
+        row1.add(column1A, rowAGbc);
+
         // === Column 2 (Middle Label) ===
         Image bgImage2 = new ImageIcon("assets/center_row1_columnB1.png").getImage();
         ImagePanel column2A = new ImagePanel(bgImage2);
         column2A.setOpaque(false);
-        
+
         rowAGbc.gridx = 2;
-        rowAGbc.weightx = 0.55; // 60.65% width
-        rowACenter.add(column2A, rowAGbc);
-        
+        rowAGbc.weightx = 0.63; // Adjusted to fill space previously taken by struts
+        row1.add(column2A, rowAGbc);
+
         // === Column 3 (2 Buttons) ===
         JPanel column3A = new JPanel(new GridLayout(2, 1));
         column3A.setOpaque(false);
-        
+
         Image staticButtonImage3 = new ImageIcon("assets/center_row1_columnC1.png").getImage();
         StaticImageButton column3AButton1 = new StaticImageButton("Options", staticButtonImage3);
         column3AButton1.addActionListener(e -> System.out.println("Button 3 clicked"));
         firstRowButtons.add(column3AButton1);
-        
+
         JPanel button3Wrapper = new JPanel(new BorderLayout());
         button3Wrapper.setOpaque(false);
         button3Wrapper.add(column3AButton1, BorderLayout.CENTER);
         column3A.add(button3Wrapper);
-        
+
         Image staticButtonImage4 = new ImageIcon("assets/center_row1_columnC2.png").getImage();
         StaticImageButton column3AButton2 = new StaticImageButton("Options", staticButtonImage4);
         column3AButton2.addActionListener(e -> System.out.println("Button 4 clicked"));
         firstRowButtons.add(column3AButton2);
-        
+
         JPanel button4Wrapper = new JPanel(new BorderLayout());
         button4Wrapper.setOpaque(false);
         button4Wrapper.add(column3AButton2, BorderLayout.CENTER);
         column3A.add(button4Wrapper);
-        
+
         rowAGbc.gridx = 3;
-        rowAGbc.weightx = 0.175; // 16.875% width
-        rowACenter.add(column3A, rowAGbc);
-        
-        // Add horizontal padding
+        rowAGbc.weightx = 0.175;
+        row1.add(column3A, rowAGbc);
+
+        // Right glue
         rowAGbc.gridx = 4;
-        rowAGbc.weightx = 0.005; // 1.4% width
-        rowACenter.add(Box.createHorizontalStrut(1), rowAGbc);
+        rowAGbc.weightx = 0.01;
+        row1.add(Box.createHorizontalGlue(), rowAGbc);
         
         gbc.gridy = 0;
         gbc.weighty = 0.15; // 15% height
-        centerPanel.add(rowACenter, gbc);
+        centerPanel.add(row1, gbc);
+
+        System.out.println("ROW2 HEIGHT: " + row1.getHeight());
         
         // === Row B (Content) ===
         Image bgImage = new ImageIcon("assets/main_background_1.png").getImage();
@@ -1095,9 +1169,12 @@ public class Gamewindow extends JFrame {
                 // Calculate row heights
                 int rowAHeight = (int)(panelHeight * 0.15);
                 int rowBHeight = (int)(panelHeight * 0.85);
+
+                System.out.println("ROW1 HEIGHT: " + rowAHeight);
+                System.out.println("ROW2 HEIGHT: " + rowBHeight);
                 
                 // Calculate column widths for Row A
-                int rowAColumnAWidth = (int)(panelWidth * 0.16875);
+                int rowAColumnAWidth = (int)(panelWidth * 0.175);
                 int rowAColumnBWidth = (int)(panelWidth * 0.6065);
                 
                 // Update button sizes for Row A
@@ -1145,53 +1222,56 @@ public class Gamewindow extends JFrame {
         });
         
         return centerPanel;
+
+        
     }
 
-    private JPanel createEastPanel() {
+   private JPanel createEastPanel() {
         // Create the east panel with GridBagLayout
         JPanel eastPanel = new JPanel(new GridBagLayout());
         eastPanel.setBackground(new Color(0xFFFFFF));
-        
+
         int eastPanelWidth = eastPanel.getWidth();
         int eastPanelHeight = eastPanel.getHeight();
-        System.out.println("[DEBUG] IN WEST PANEL DIMENSIONS: " + eastPanelWidth + " x " + eastPanelHeight);
-        
+        System.out.println("[DEBUG] IN EAST PANEL DIMENSIONS: " + eastPanelWidth + " x " + eastPanelHeight);
+
         // Set preferred and maximum size to maintain the 25% scaling
         eastPanel.setPreferredSize(new Dimension(eastPanelWidth, 0));
-        eastPanel.setMaximumSize(new Dimension(eastPanelHeight, Integer.MAX_VALUE));
-        
+        eastPanel.setMaximumSize(new Dimension(eastPanelWidth, Integer.MAX_VALUE));
+
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.BOTH;
         gbc.gridx = 0;
         gbc.weightx = 1.0;
-        
+
         // === Row 1 (15% of East Panel Height) ===
         Image eastRow1Image = new ImageIcon("assets/east_row1.png").getImage();
         ImagePanel row1 = new ImagePanel(eastRow1Image);
         row1.setLayout(new BorderLayout());
-        
+
         gbc.gridy = 0;
         gbc.weighty = 0.15; // 15% of east panel height
         eastPanel.add(row1, gbc);
-        
+
         // === Row 2 (85% of East Panel Height) ===
         JPanel row2 = new JPanel(new GridBagLayout());
         row2.setBackground(new Color(0xFFFFFF));
-        
+
         GridBagConstraints row2Gbc = new GridBagConstraints();
         row2Gbc.fill = GridBagConstraints.BOTH;
         row2Gbc.gridx = 0;
         row2Gbc.weightx = 1.0;
-        
+
         // === Row 2A (15% of row2 height) - Scrollable GridBag with 5 columns ===
         JPanel row2A = new JPanel(new GridBagLayout());
         row2A.setBackground(new Color(0xA7EAA7));
-        
+
         // Create a grid with 5 columns and temporary number of rows (10)
         GridBagConstraints row2AGbc = new GridBagConstraints();
         row2AGbc.fill = GridBagConstraints.BOTH;
+        row2AGbc.weighty = 1.0;
         row2AGbc.weightx = 0.2; // Each column is 20% of the width
-        
+
         // Add cells to the grid (5 columns x 10 rows)
         for (int row = 0; row < 2; row++) {
             for (int col = 0; col < 5; col++) {
@@ -1204,82 +1284,82 @@ public class Gamewindow extends JFrame {
                 row2A.add(cell, row2AGbc);
             }
         }
-        
+
         // Create a scroll pane for row2A
         JScrollPane row2AScroll = new JScrollPane(row2A);
         row2AScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         row2AScroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
-        
+
         row2Gbc.gridy = 0;
         row2Gbc.weighty = 0.15; // 15% of row2 height
         row2.add(row2AScroll, row2Gbc);
-        
+
         // === Row 2B (7.5% of row2 height) - Restore rowCEast functionality ===
-        Image row2BImage = new ImageIcon("assets/east_row3.png").getImage();
+        Image row2BImage = new ImageIcon("assets/east_row2B.png").getImage();
         ImagePanel row2B = new ImagePanel(row2BImage);
         row2B.setLayout(new GridBagLayout());
-        
+
         GridBagConstraints row2BGbc = new GridBagConstraints();
         row2BGbc.fill = GridBagConstraints.BOTH;
         row2BGbc.gridy = 0;
         row2BGbc.weighty = 1.0;
-        
+
         // Column 1 (Buy/Sell) - 32.5% width
-        Image buyImage = new ImageIcon("assets/east_row3_column1_Buy.png").getImage();
-        Image sellImage = new ImageIcon("assets/east_row3_column1_Sell.png").getImage();
-        
+        Image buyImage = new ImageIcon("assets/east_row2B_column1A.png").getImage();
+        Image sellImage = new ImageIcon("assets/east_row2B_column1B.png").getImage();
+
         ImagePanel row2BColumn1 = new ImagePanel(buyImage);
         row2BColumn1.setLayout(new BorderLayout());
-        
+
         JLabel modeLabel = new JLabel("Buy", SwingConstants.CENTER);
         row2BColumn1.add(modeLabel, BorderLayout.CENTER);
         modeLabel.setVisible(false);
-        
+
         row2BGbc.gridx = 0;
         row2BGbc.weightx = 0.325; // 32.5% width
         row2B.add(row2BColumn1, row2BGbc);
-        
+
         // Column 2 (1) - 15% width
-        Image row2BColumn2Image = new ImageIcon("assets/east_row3_column2.png").getImage();
+        Image row2BColumn2Image = new ImageIcon("assets/east_row2B_column2.png").getImage();
         StaticImageToggleButton row2BColumn2 = new StaticImageToggleButton("1", row2BColumn2Image);
-        
+
         row2BGbc.gridx = 1;
         row2BGbc.weightx = 0.15; // 15% width
         row2B.add(row2BColumn2, row2BGbc);
-        
+
         // Column 3 (10) - 17.5% width
-        Image row2BColumn3Image = new ImageIcon("assets/east_row3_column3.png").getImage();
+        Image row2BColumn3Image = new ImageIcon("assets/east_row2B_column3.png").getImage();
         StaticImageToggleButton row2BColumn3 = new StaticImageToggleButton("10", row2BColumn3Image);
-        
+
         row2BGbc.gridx = 2;
         row2BGbc.weightx = 0.175; // 17.5% width
         row2B.add(row2BColumn3, row2BGbc);
-        
+
         // Column 4 (100) - 20% width
-        Image row2BColumn4Image = new ImageIcon("assets/east_row3_column4.png").getImage();
+        Image row2BColumn4Image = new ImageIcon("assets/east_row2B_column4.png").getImage();
         StaticImageToggleButton row2BColumn4 = new StaticImageToggleButton("100", row2BColumn4Image);
-        
+
         row2BGbc.gridx = 3;
         row2BGbc.weightx = 0.2; // 20% width
         row2B.add(row2BColumn4, row2BGbc);
-        
+
         // Column 5 (Switch) - 15% width
-        Image row2BColumn5Image = new ImageIcon("assets/east_row3_column5.png").getImage();
+        Image row2BColumn5Image = new ImageIcon("assets/east_row2B_column5.png").getImage();
         StaticImageButton row2BColumn5 = new StaticImageButton("S", row2BColumn5Image);
-        
+
         row2BGbc.gridx = 4;
         row2BGbc.weightx = 0.15; // 15% width
         row2B.add(row2BColumn5, row2BGbc);
-        
+
         // Set up button group and listeners
         ButtonGroup quantityGroup = new ButtonGroup();
         quantityGroup.add(row2BColumn2);
         quantityGroup.add(row2BColumn3);
         quantityGroup.add(row2BColumn4);
-        
+
         Color selectedColor = new Color(0xC1FF72); // light green
         Color defaultColor = new Color(0xEAE77D);  // base yellow
-        
+
         ActionListener quantityListener = e -> {
             AbstractButton source = (AbstractButton) e.getSource();
             
@@ -1293,11 +1373,11 @@ public class Gamewindow extends JFrame {
             row2BColumn3.setBackground(row2BColumn3.isSelected() ? selectedColor : defaultColor);
             row2BColumn4.setBackground(row2BColumn4.isSelected() ? selectedColor : defaultColor);
         };
-        
+
         row2BColumn2.addActionListener(quantityListener);
         row2BColumn3.addActionListener(quantityListener);
         row2BColumn4.addActionListener(quantityListener);
-        
+
         row2BColumn5.addActionListener(e -> {
             if ("Buy".equalsIgnoreCase(modeLabel.getText())) {
                 modeLabel.setText("Sell");
@@ -1309,36 +1389,36 @@ public class Gamewindow extends JFrame {
                 Global.setMode("BUY");
             }
         });
-        
+
         // Add to tracking lists
         genLabel.add(modeLabel);
         genToggleButtons.add(row2BColumn2);
         genToggleButtons.add(row2BColumn3);
         genToggleButtons.add(row2BColumn4);
         genButtons.add(row2BColumn5);
-        
+
         row2Gbc.gridy = 1;
         row2Gbc.weighty = 0.075; // 7.5% of row2 height
         row2.add(row2B, row2Gbc);
-        
+
         // === Row 2C (remaining height of row2) - Using existing rowDEast functionality ===
-        Image rowDEastImage = new ImageIcon("assets/east_row5.png").getImage();
-        rowDEast = new ImagePanel(rowDEastImage);
-        rowDEast.setLayout(new GridLayout(0, 1)); // Dynamic row count
-        
-        JScrollPane scrollableUpgrades = new JScrollPane(rowDEast);
+        Image row2CImage = new ImageIcon("assets/east_row2C.png").getImage();
+        row2C = new TiledImagePanel(row2CImage);
+        row2C.setLayout(new GridLayout(0, 1)); // Dynamic row count
+
+        JScrollPane scrollableUpgrades = new JScrollPane(row2C);
         scrollableUpgrades.getViewport().setBackground(new Color(0xE59C9C));
         scrollableUpgrades.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         scrollableUpgrades.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
-        
+
         row2Gbc.gridy = 2;
         row2Gbc.weighty = 0.775; // Remaining height (77.5% of row2)
         row2.add(scrollableUpgrades, row2Gbc);
-        
+
         gbc.gridy = 1;
         gbc.weighty = 0.85; // 85% of east panel height
         eastPanel.add(row2, gbc);
-        
+
         // Add resize listener to handle component sizing
         eastPanel.addComponentListener(new ComponentAdapter() {
             @Override
@@ -1357,12 +1437,21 @@ public class Gamewindow extends JFrame {
                 for (Component comp : row2AComponents) {
                     if (comp instanceof JPanel) {
                         comp.setPreferredSize(new Dimension((int)(eastWidth * 0.2), (int)(row2AHeight * 0.1)));
+                        comp.setMinimumSize(comp.getPreferredSize());
+                        comp.setMaximumSize(comp.getPreferredSize());
                     }
                 }
                 
+                // Update row2B column sizes
+                row2BColumn1.setPreferredSize(new Dimension((int)(eastWidth * 0.325), row2BHeight));
+                row2BColumn2.setPreferredSize(new Dimension((int)(eastWidth * 0.15), row2BHeight));
+                row2BColumn3.setPreferredSize(new Dimension((int)(eastWidth * 0.175), row2BHeight));
+                row2BColumn4.setPreferredSize(new Dimension((int)(eastWidth * 0.2), row2BHeight));
+                row2BColumn5.setPreferredSize(new Dimension((int)(eastWidth * 0.15), row2BHeight));
+                
                 // Update upgrade button dimensions for row2C (rowDEast)
-                upgradeButtonWidth = eastWidth;
-                upgradeButtonHeight = (int)(row2CHeight * 0.14);
+                upgradeButtonWidth = (int) (eastWidth - 18);
+                upgradeButtonHeight = (int)(row2Height * 0.14);
                 
                 // Resize upgrade wrappers
                 for (JPanel wrapper : upgradeWrappers) {
@@ -1374,7 +1463,7 @@ public class Gamewindow extends JFrame {
                 eastPanel.repaint();
             }
         });
-        
+
         return eastPanel;
     }
 
@@ -1424,11 +1513,11 @@ public class Gamewindow extends JFrame {
         upgradeWrappers.add(wrapper);
 
         // Add the wrapper to the availablePanel
-        rowDEast.add(wrapper);
+        row2C.add(wrapper);
 
         // Make sure the panel is updated
-        rowDEast.revalidate();
-        rowDEast.repaint();
+        row2C.revalidate();
+        row2C.repaint();
 
         System.out.println("Added upgrade: " + upgrade.getName());
     }
