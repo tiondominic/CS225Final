@@ -55,4 +55,38 @@ public class Global {
     public static void setNextGCThreshold(double threshold) {
         nextGCThreshold = threshold;
     }
+
+    // Decoy Golden Cookie state variables
+    private static boolean decoyGCstate = false;
+    private static long decoyCounter = 0;
+    private static double nextDecoyGCThreshold = 0;
+
+    // Decoy Golden Cookie state methods
+    public static boolean getDecoyGCstate() {
+        return decoyGCstate;
+    }
+
+    public static void setDecoyGCbool(boolean state) {
+        decoyGCstate = state;
+    }
+
+    public static long getDecoyCounter() {
+        return decoyCounter;
+    }
+
+    public static void addDecoyCounter(long amount) {
+        decoyCounter += amount;
+    }
+
+    public static void resetDecoyCounter() {
+        decoyCounter = 0;
+    }
+
+    public static double getNextDecoyGCThreshold() {
+        return nextDecoyGCThreshold;
+    }
+
+    public static void setNextDecoyGCThreshold(double threshold) {
+        nextDecoyGCThreshold = threshold;
+    }
 }

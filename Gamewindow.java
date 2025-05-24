@@ -1213,7 +1213,24 @@ public class Gamewindow extends JFrame {
 
         Image staticButtonImage1 = new ImageIcon("assets/center_row1_columnA1.png").getImage();
         StaticImageButton column1AButton1 = new StaticImageButton("Options", staticButtonImage1);
-        column1AButton1.addActionListener(e -> System.out.println("Button 1 clicked"));
+        
+        // DEBUG: Bind decoy golden cookie to this button
+        column1AButton1.addActionListener(e -> {
+            System.out.println("[DEBUG] Spawning decoy golden cookie instantly...");
+            
+            // Create and immediately show a decoy golden cookie
+            DecoyChaosElements debugDecoyChao = new DecoyChaosElements(gamestate);
+            debugDecoyChao.setUp();
+            
+            // Optional: Auto-close after 15 seconds like the normal system
+            Timer debugTimer = new Timer(15000, closeEvent -> {
+                debugDecoyChao.exit();
+                System.out.println("[DEBUG] Debug decoy golden cookie auto-closed after 15 seconds");
+            });
+            debugTimer.setRepeats(false);
+            debugTimer.start();
+        });
+
         firstRowButtons.add(column1AButton1);
 
         JPanel button1Wrapper = new JPanel(new BorderLayout());
@@ -1362,7 +1379,7 @@ public class Gamewindow extends JFrame {
         // --- Center content (cookie button panel) ---
         JPanel row2B = new JPanel(new GridBagLayout());
         row2B.setOpaque(false);
-        row2B.setBorder(BorderFactory.createLineBorder(Color.RED)); // Debug visual
+        //row2B.setBorder(BorderFactory.createLineBorder(Color.RED)); // Debug visual
 
         Image img = new ImageIcon("assets/main_cookie_3.png").getImage();
         RotatingImageButton actionButtonrow2B = new RotatingImageButton(null, img);

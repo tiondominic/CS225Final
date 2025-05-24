@@ -32,6 +32,12 @@ public class Gamestate {
         amount += cookieCount;
     }
 
+    public void decoyClick(double cookieCount) {
+        // Deduct cookies, but don't let it go below 0
+        amount = Math.max(0, amount - cookieCount);
+        System.out.println("[DECOY DEBUG] Deducted Cookies: " + cookieCount + " Cookies. Remaining: " + amount);
+    }
+
     public void Click(){
         amount += clickPWR;
     }
