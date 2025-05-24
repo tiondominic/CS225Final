@@ -2,11 +2,18 @@ import java.awt.*;
 import java.awt.event.ActionListener;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
-
+import java.awt.image.BufferedImage;
+import java.awt.image.ConvolveOp;
+import java.awt.image.Kernel;
+import java.awt.geom.AffineTransform;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+
+import java.io.InputStream;
+import java.io.File;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -36,7 +43,7 @@ class NumberFormatter {
     }
 
     public static String formatCPS(double number) {
-        if (number < 1_000) {
+        if (number < 100_000) {
             return formatter1.format(number); // Always at least one decimal
         } else if (number < 1_000_000) {
             return formatter2.format(number / 1_000);
@@ -143,12 +150,11 @@ class StaticImageToggleButton extends JToggleButton {
 
         g2d.drawImage(image, x, y, drawWidth, drawHeight, this);
 
-        // ⬇️ Apply dark overlay if toggled on (half the height, centered)
         if (isToggled) {
             int overlayHeight = (int) (drawHeight * 0.625);
-            int overlayY = y + (drawHeight - overlayHeight) / 2; // center vertically in image area
+            int overlayY = y + (drawHeight - overlayHeight) / 2;
 
-            g2d.setColor(new Color(0, 0, 0, 100)); // semi-transparent black
+            g2d.setColor(new Color(0, 0, 0, 100));
             int arcWidth = 13;
             int arcHeight = 13;
             g2d.fillRoundRect(x, overlayY, drawWidth, overlayHeight, arcWidth, arcHeight);
@@ -210,7 +216,7 @@ class StaticImageButton extends JButton {
         }
 
         currentScale = scale;
-        updateLabelFontScale(); // 🔥 Apply animation scale to label text
+        updateLabelFontScale();
 
         int buttonWidth = getWidth();
         int buttonHeight = getHeight();
@@ -393,110 +399,300 @@ class TiledImagePanel extends JPanel {
 }
 
 // Custom panel for upgrade buttons with three-column layout
-class UpgradePanel extends JPanel {
-    private final JLabel imageLabel;
+class UpgradeButton extends JButton {
     private final JLabel nameLabel;
     private final JLabel costLabel;
     private final JLabel ownedLabel;
     private final Color RED_TEXT = new Color(0xFF0000);
-    private final Color GREEN_TEXT = new Color(0x00AA00);
+    private final Color GREEN_TEXT = new Color(0x5ce85a);
     private final Upgrade upgrade;
-    
-    public UpgradePanel(Upgrade upgrade) {
+    private Image buttonImage;
+    private int currentStage = 1;
+
+    // Track button state
+    private boolean isHovered = false;
+    private boolean isPressed = false;
+    private double currentScale = 1.0;
+
+    // Font sizes
+    private Font nameLabelFont;
+    private Font costLabelFont;
+    private Font ownedLabelFont;
+
+    // Cached font
+    private static Font robotoSerifExtraBold;
+
+    static {
+        try {
+            robotoSerifExtraBold = Font.createFont(Font.TRUETYPE_FONT, new File("assets/fonts/RobotoSerif-ExtraBold.ttf"));
+        } catch (Exception e) {
+            System.err.println("Failed to load custom font. Using fallback.");
+            robotoSerifExtraBold = new Font("SansSerif", Font.BOLD, 12);
+        }
+    }
+
+    // Corner radius for overlays
+    private final int cornerRadius = 32;
+
+    public UpgradeButton(Upgrade upgrade, int buttonIndex) {
+        super();
         this.upgrade = upgrade;
-        setLayout(new BorderLayout());
+        setLayout(null);
+        setContentAreaFilled(false);
+        setBorderPainted(false);
+        setFocusPainted(false);
 
-        // Create a panel with GridBagLayout for the three columns
-        JPanel contentPanel = new JPanel(new GridBagLayout());
-        setBackground(new Color(255, 255, 255, 100));  // white with some transparency
-        contentPanel.setOpaque(false);
+        // Load the appropriate button image
+        int imageIndex = Math.min(Math.max(buttonIndex + 2, 2), 16);
+        String imagePath = "assets/Upgrade Buttons/Upgrade_Button-" + String.format("%02d", imageIndex) + ".png";
 
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.fill = GridBagConstraints.BOTH;
-        gbc.gridy = 0;
-        gbc.weighty = 1.0;
+        try {
+            buttonImage = new ImageIcon(imagePath).getImage();
+        } catch (Exception e) {
+            System.err.println("Failed to load image: " + imagePath);
+            buttonImage = null;
+        }
 
-        // Column 1: Image placeholder (20% width)
-        JPanel imagePanel = new JPanel(new BorderLayout());
-        imagePanel.setBackground(new Color(50, 80, 150, 255));  // solid background
-        imagePanel.setOpaque(true);
-        imageLabel = new JLabel("[IMG]");
-        imageLabel.setHorizontalAlignment(SwingConstants.LEFT);
-        imageLabel.setBorder(new EmptyBorder(5, 10, 5, 5));
-        imagePanel.add(imageLabel, BorderLayout.CENTER);
+        nameLabelFont = FontManager.getFont("RobotoSerif-ExtraBold", 32f);
+        costLabelFont = FontManager.getFont("RobotoSerif-SemiBold", 20f);
+        ownedLabelFont = FontManager.getFont("RobotoSerif-Bold", 42f);
 
-        gbc.gridx = 0;
-        gbc.weightx = 0.2;
-        contentPanel.add(imagePanel, gbc);
+        // Create labels with larger fonts and white/red text
+        nameLabel = new ShadowLabel("???", SwingConstants.LEFT);
+        ((ShadowLabel) nameLabel).setShadow(new Color(0, 0, 0, 100), 2, 2, 4);
+        nameLabel.setFont(nameLabelFont);
+        nameLabel.setForeground(Color.WHITE);
 
-        // Column 2: Name and cost (50% width)
-        JPanel infoPanel = new JPanel(new GridLayout(2, 1));
-        infoPanel.setBackground(new Color(50, 50, 50, 255));
-        infoPanel.setOpaque(false);
-
-        nameLabel = new JLabel(upgrade.getName());
-        nameLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        nameLabel.setFont(nameLabel.getFont().deriveFont(Font.BOLD, 14f));
-
-        double cost = upgrade.getCost(Global.getQuantity());
-        String formattedCost = NumberFormatter.formatNumber(cost);
-        String unit = NumberFormatter.getUnit(cost);
-        costLabel = new JLabel("Cost: " + formattedCost + " " + unit);
-        costLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        costLabel = new ShadowLabel("???", SwingConstants.LEFT);
+        ((ShadowLabel) costLabel).setShadow(new Color(0, 0, 0, 125), 1, 1, 4);
+        costLabel.setFont(costLabelFont);
         costLabel.setForeground(RED_TEXT);
 
-        infoPanel.add(nameLabel);
-        infoPanel.add(costLabel);
+        ownedLabel = new ShadowLabel("0", SwingConstants.CENTER);
+        ((ShadowLabel) costLabel).setShadow(new Color(0, 0, 0, 125), 1, 1, 1);
+        ownedLabel.setFont(ownedLabelFont);
+        ownedLabel.setForeground(new Color(0, 0, 0, 128));
 
-        gbc.gridx = 1;
-        gbc.weightx = 0.5;
-        contentPanel.add(infoPanel, gbc);
+        add(nameLabel);
+        add(costLabel);
+        add(ownedLabel);
 
-        // Column 3: Owned count (30% width)
-        JPanel ownedPanel = new JPanel(new BorderLayout());
-        ownedPanel.setBackground(new Color(0, 0, 0, 150));  // semi-transparent black
-        ownedPanel.setOpaque(true);
+        setOpaque(false);
 
-        ownedLabel = new JLabel(String.valueOf(upgrade.getOwned()));
-        ownedLabel.setHorizontalAlignment(SwingConstants.RIGHT);
-        ownedLabel.setFont(ownedLabel.getFont().deriveFont(Font.BOLD, 18f));
-        ownedLabel.setBorder(new EmptyBorder(5, 5, 5, 10));
-        ownedPanel.add(ownedLabel, BorderLayout.CENTER);
+        addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                updateLabelPositions();
+            }
+        });
 
-        gbc.gridx = 2;
-        gbc.weightx = 0.3;
-        contentPanel.add(ownedPanel, gbc);
+        addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                setHovered(true);
+            }
 
-        // Add the content panel to this panel
-        add(contentPanel, BorderLayout.CENTER);
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                setHovered(false);
+                setPressed(false); // Reset pressed state when mouse exits
+            }
 
-        // Set initial opacity
-        setOpaque(true);
+            @Override
+            public void mousePressed(java.awt.event.MouseEvent evt) {
+                setPressed(true);
+            }
+
+            @Override
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                setPressed(false);
+            }
+        });
     }
-    
+
+    private void updateLabelPositions() {
+        int width = getWidth();
+        int height = getHeight();
+
+        int ownedWidth = 70;
+        int labelWidth = (int) (width * 0.3);
+        int labelHeight = (int) (height * 0.15);
+        int labelHeight2 = (int) (height * 0.5);
+        int labelHeight3 = (int) (height * 0.25);
+
+        nameLabel.setBounds(labelWidth, labelHeight, width - ownedWidth - 20, height / 2 - 5);
+        costLabel.setBounds(labelWidth, labelHeight2, width - ownedWidth - 20, height / 2 - 5);
+        ownedLabel.setBounds(width - ownedWidth - 10, labelHeight3, ownedWidth, height - 10);
+
+        // Don't override fonts here!
+        updateLabelFontScale();
+    }
+
+    private void updateLabelFontScale() {
+        nameLabel.setFont(nameLabelFont.deriveFont((float) (nameLabelFont.getSize2D() * currentScale)));
+        costLabel.setFont(costLabelFont.deriveFont((float) (costLabelFont.getSize2D() * currentScale)));
+        ownedLabel.setFont(ownedLabelFont.deriveFont((float) (ownedLabelFont.getSize2D() * currentScale)));
+    }
+
+    public void setHovered(boolean hovered) {
+        this.isHovered = hovered;
+        repaint();
+    }
+
+    public void setPressed(boolean pressed) {
+        this.isPressed = pressed;
+        repaint();
+    }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+
+        int width = getWidth();
+        int height = getHeight();
+
+        Graphics2D g2d = (Graphics2D) g.create();
+        g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+        g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        double scale = 1.0;
+        if (isPressed) {
+            scale = 0.9;
+        } else if (isHovered) {
+            scale = 0.95;
+        }
+
+        currentScale = scale;
+        updateLabelFontScale();
+
+        int drawWidth = (int) (width * scale);
+        int drawHeight = (int) (height * scale);
+
+        int x = (width - drawWidth) / 2;
+        int y = (height - drawHeight) / 2;
+
+        if (buttonImage != null) {
+            g2d.drawImage(buttonImage, x, y, drawWidth, drawHeight, this);
+        } else {
+            GradientPaint gradient = new GradientPaint(0, 0, new Color(0xF7F4B7), width, height, new Color(0xE5D68A));
+            g2d.setPaint(gradient);
+            g2d.fillRoundRect(x, y, drawWidth, drawHeight, cornerRadius, cornerRadius);
+        }
+
+        if (currentStage == 1) {
+            g2d.setColor(new Color(0, 0, 0, 230));
+            g2d.fillRoundRect(x, y, drawWidth, drawHeight, cornerRadius, cornerRadius);
+        } else if (currentStage == 2) {
+            g2d.setColor(new Color(0, 0, 0, 115));
+            g2d.fillRoundRect(x, y, drawWidth, drawHeight, cornerRadius, cornerRadius);
+        }
+
+        g2d.dispose();
+    }
+
     public void updateStage(int stage, double cookieCount) {
-        // Update owned count
+        this.currentStage = stage;
         ownedLabel.setText(String.valueOf(upgrade.getOwned()));
 
-        // Update name based on stage
         if (stage == 1) {
             nameLabel.setText("???");
+            costLabel.setText("???");
         } else {
             nameLabel.setText(upgrade.getName());
+            double cost = upgrade.getCost(Global.getQuantity());
+            String formattedCost = NumberFormatter.formatNumber(cost);
+            String unit = NumberFormatter.getUnit(cost);
+            costLabel.setText(formattedCost + " " + unit);
+
+            costLabel.setForeground(stage == 3 ? GREEN_TEXT : RED_TEXT);
         }
 
-        // Use shared NumberFormatter for cost formatting
-        double cost = upgrade.getCost(Global.getQuantity());
-        String formattedCost = NumberFormatter.formatNumber(cost);
-        String unit = NumberFormatter.getUnit(cost);
-        costLabel.setText("Cost: " + formattedCost + " " + unit);
+        repaint();
+    }
+}
 
-        // Set cost color based on stage
-        if (stage == 3) {
-            costLabel.setForeground(GREEN_TEXT);
-        } else {
-            costLabel.setForeground(RED_TEXT);
+class ShadowLabel extends JLabel {
+    private Color shadowColor = new Color(0, 0, 0, 100);
+    private int shadowOffsetX = 2;
+    private int shadowOffsetY = 2;
+    private int blurRadius = 4;
+
+    public ShadowLabel(String text, int alignment) {
+        super(text, alignment);
+    }
+
+    public void setShadow(Color color, int offsetX, int offsetY, int blurRadius) {
+        this.shadowColor = color;
+        this.shadowOffsetX = offsetX;
+        this.shadowOffsetY = offsetY;
+        this.blurRadius = blurRadius;
+        repaint();
+    }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        String text = getText();
+        Font font = getFont();
+        FontMetrics fm = getFontMetrics(font);
+
+        int textWidth = fm.stringWidth(text);
+        int textHeight = fm.getHeight();
+
+        int x = 0;
+        if (getHorizontalAlignment() == SwingConstants.CENTER) {
+            x = (getWidth() - textWidth) / 2;
+        } else if (getHorizontalAlignment() == SwingConstants.RIGHT) {
+            x = getWidth() - textWidth;
         }
+
+        int y = fm.getAscent();
+
+        // Create shadow image
+        BufferedImage shadowImg = new BufferedImage(textWidth + blurRadius * 2, textHeight + blurRadius * 2, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D sg = shadowImg.createGraphics();
+        sg.setFont(font);
+        sg.setColor(shadowColor);
+        sg.drawString(text, blurRadius, y + blurRadius);
+        sg.dispose();
+
+        // Apply blur
+        shadowImg = getBlurredImage(shadowImg, blurRadius);
+
+        // Draw shadow
+        g.drawImage(shadowImg, x + shadowOffsetX - blurRadius, y - fm.getAscent() + shadowOffsetY - blurRadius, null);
+
+        // Draw main text
+        g.setFont(font);
+        g.setColor(getForeground());
+        g.drawString(text, x, y);
+    }
+
+    private BufferedImage getBlurredImage(BufferedImage image, int radius) {
+        float[] matrix = createGaussianKernel(radius);
+        ConvolveOp op = new ConvolveOp(new Kernel(radius * 2 + 1, radius * 2 + 1, matrix), ConvolveOp.EDGE_NO_OP, null);
+        return op.filter(image, null);
+    }
+
+    private float[] createGaussianKernel(int radius) {
+        int size = radius * 2 + 1;
+        float[] kernel = new float[size * size];
+        float sigma = radius / 2f;
+        float norm = 0;
+        int index = 0;
+        for (int y = -radius; y <= radius; y++) {
+            for (int x = -radius; x <= radius; x++) {
+                float value = (float) Math.exp(-(x * x + y * y) / (2 * sigma * sigma));
+                kernel[index++] = value;
+                norm += value;
+            }
+        }
+
+        for (int i = 0; i < kernel.length; i++) {
+            kernel[i] /= norm;
+        }
+
+        return kernel;
     }
 }
 
@@ -516,8 +712,28 @@ public class Gamewindow extends JFrame {
     private int upgradeButtonWidth;
     private int upgradeButtonHeight;
     private List<JPanel> upgradeWrappers = new ArrayList<>();
-    private List<UpgradePanel> upgradePanels = new ArrayList<>();
-    private final List<FloatingLabel> floatingLabels = new ArrayList<>();
+    private List<UpgradeButton> upgradePanels = new ArrayList<>();
+    
+    // OPTIMIZED: Use CopyOnWriteArrayList for thread safety and better performance
+    private final CopyOnWriteArrayList<FloatingText> floatingTexts = new CopyOnWriteArrayList<>();
+    
+    // OPTIMIZED: Limit maximum floating text objects
+    private static final int MAX_FLOATING_TEXTS = 20;
+    
+    // OPTIMIZED: Cache frequently used objects
+    private Font cachedFloatingTextFont;
+    private AlphaComposite[] alphaComposites = new AlphaComposite[61]; // Pre-calculated alpha values
+    
+    // OPTIMIZED: Batch similar floating texts
+    // Remove these batching variables - not needed for original Cookie Clicker style
+    // private String lastFloatingText = "";
+    // private int lastFloatingX = -1;
+    // private int lastFloatingY = -1;
+    // private long lastFloatingTime = 0;
+    // private static final long BATCH_THRESHOLD_MS = 100;
+
+    // Glass pane for floating text
+    private OptimizedGlassPane glassPane;
 
     // Colors for upgrade stages
     private final Color STAGE1_BG = new Color(0x333333); // Dark gray
@@ -548,6 +764,9 @@ public class Gamewindow extends JFrame {
         setTitle("Cookie Clicker Layout - Colored");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
+        // OPTIMIZED: Pre-calculate alpha composites
+        initializeAlphaComposites();
+
         // Set size to 75% width and 75% height of the screen, and center it
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
 
@@ -567,6 +786,7 @@ public class Gamewindow extends JFrame {
         setLayout(new BorderLayout());
 
         int westPanelWidth = (int) (width * 0.25);  // 25% of frame width
+        int centerPanelWidth = (int) (width * 0.5); // e.g. 45% of frame width (adjust as needed)
         int eastPanelWidth = (int) (width * 0.25);  // 25% of frame width
 
         // Create the three main panels with GridBagLayout
@@ -583,7 +803,6 @@ public class Gamewindow extends JFrame {
         eastPanel.setMinimumSize(new Dimension(eastPanelWidth, 0));
         eastPanel.setMaximumSize(new Dimension(eastPanelWidth, Integer.MAX_VALUE));
 
-        int centerPanelWidth = (int) (width * 0.5); // e.g. 45% of frame width (adjust as needed)
         centerPanel.setPreferredSize(new Dimension(centerPanelWidth, height));
         centerPanel.setMinimumSize(new Dimension(centerPanelWidth, 0));
         centerPanel.setMaximumSize(new Dimension(centerPanelWidth, Integer.MAX_VALUE));
@@ -599,20 +818,19 @@ public class Gamewindow extends JFrame {
         uiUpdateTimer = new Timer(16, e -> updateDisplay());
         uiUpdateTimer.start();
 
-        Timer floatingLabelTimer = new Timer(16, e -> {
-            Iterator<FloatingLabel> iter = floatingLabels.iterator();
-            while (iter.hasNext()) {
-                FloatingLabel fl = iter.next();
-                if (fl.update()) {
-                    getLayeredPane().remove(fl.label);
-                    iter.remove();
-                }
+        // OPTIMIZED: Reduce timer frequency to 30fps for floating text
+        Timer floatingLabelTimer = new Timer(33, e -> {
+            updateFloatingTexts();
+            if (glassPane != null) {
+                glassPane.repaint(); // Repaint glass pane instead of entire frame
             }
-            getLayeredPane().repaint();
         });
         floatingLabelTimer.start();
 
         setVisible(true);
+
+        // OPTION 2: Set up glass pane for floating text after setVisible(true)
+        setupGlassPane();
 
         // After visible: dynamically size the side panels
         this.addComponentListener(new ComponentAdapter() {
@@ -630,7 +848,6 @@ public class Gamewindow extends JFrame {
                 westPanel.setMinimumSize(new Dimension(sidePanelWidth, currentHeight));
                 westPanel.setMaximumSize(new Dimension(sidePanelWidth, Integer.MAX_VALUE));
 
-                
                 centerPanel.setPreferredSize(new Dimension(centerPanelWidth, currentHeight));
                 centerPanel.setMinimumSize(new Dimension(centerPanelWidth, currentHeight));
                 centerPanel.setMaximumSize(new Dimension(centerPanelWidth, Integer.MAX_VALUE));
@@ -638,6 +855,9 @@ public class Gamewindow extends JFrame {
                 eastPanel.setPreferredSize(new Dimension(sidePanelWidth, currentHeight));
                 eastPanel.setMinimumSize(new Dimension(sidePanelWidth, currentHeight));
                 eastPanel.setMaximumSize(new Dimension(sidePanelWidth, Integer.MAX_VALUE));
+
+                // OPTIMIZED: Update cached font when window resizes
+                updateCachedFont();
 
                 // Force re-layout
                 revalidate();
@@ -654,7 +874,79 @@ public class Gamewindow extends JFrame {
 
             System.out.println("Adjusted for insets: " + contentWidth + " x " + contentHeight);
             System.out.println("Adjusted for insets centerpanel: " + centerPanelWidth + " x " + contentHeight);
+            
+            // OPTIMIZED: Initialize cached font after window is fully set up
+            updateCachedFont();
         });
+    }
+
+    // OPTIMIZED: Pre-calculate alpha composites for better performance
+    private void initializeAlphaComposites() {
+        alphaComposites = new AlphaComposite[91]; // 90 frames + 1
+        for (int i = 0; i <= 90; i++) {
+            float opacity;
+            if (i < 20) {
+                opacity = 1.0f; // Full opacity for first 20 frames
+            } else {
+                opacity = 1.0f - ((i - 20) / 70.0f); // Fade out over remaining 70 frames
+            }
+            alphaComposites[i] = AlphaComposite.getInstance(AlphaComposite.SRC_OVER, Math.max(0.0f, opacity));
+        }
+    }
+
+    // OPTIMIZED: Update cached font based on current window size
+    private void updateCachedFont() {
+        int frameHeight = getHeight();
+        int baseFontSize = (int) (frameHeight * 0.03);
+        cachedFloatingTextFont = new Font("Garamond", Font.BOLD, baseFontSize);
+    }
+
+    // OPTIMIZED: Custom glass pane with better performance
+    private class OptimizedGlassPane extends JPanel {
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            
+            if (floatingTexts.isEmpty()) return;
+            
+            Graphics2D g2d = (Graphics2D) g.create();
+            
+            // Enable antialiasing for smooth text rendering
+            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+            
+            // Set font once
+            if (cachedFloatingTextFont != null) {
+                g2d.setFont(cachedFloatingTextFont);
+            }
+            
+            g2d.setColor(Color.WHITE);
+            
+            // Draw all floating texts
+            for (FloatingText ft : floatingTexts) {
+                ft.drawOptimized(g2d, alphaComposites);
+            }
+            
+            g2d.dispose();
+        }
+    }
+
+    // OPTIMIZED: Efficient floating text update
+    private void updateFloatingTexts() {
+        if (floatingTexts.isEmpty()) return;
+        
+        // Remove expired texts in batch
+        floatingTexts.removeIf(FloatingText::update);
+    }
+
+    // OPTION 2: Glass pane setup method
+    private void setupGlassPane() {
+        glassPane = new OptimizedGlassPane();
+        glassPane.setOpaque(false);
+        setGlassPane(glassPane);
+        glassPane.setVisible(true);
+        
+        System.out.println("[DEBUG] Optimized glass pane set up for floating text rendering");
     }
 
     private JPanel createWestPanel() {
@@ -894,14 +1186,6 @@ public class Gamewindow extends JFrame {
         // Create the center panel with GridBagLayout
         JPanel centerPanel = new JPanel(new GridBagLayout());
         centerPanel.setBackground(new Color(0xFFFFFF));
-
-        int centerPanelWidth = centerPanel.getWidth();
-        int centerPanelHeight = centerPanel.getHeight();
-        System.out.println("[DEBUG] IN CENTER PANEL DIMENSIONS: " + centerPanelWidth + " x " + centerPanelHeight);
-
-        // Set preferred and maximum size to maintain the 25% scaling
-        centerPanel.setPreferredSize(new Dimension(centerPanelWidth, 0));
-        centerPanel.setMaximumSize(new Dimension(centerPanelWidth, Integer.MAX_VALUE));
         
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.BOTH;
@@ -999,42 +1283,43 @@ public class Gamewindow extends JFrame {
 
         System.out.println("ROW2 HEIGHT: " + row1.getHeight());
         
-        // === Row B (Content) ===
+        // === ROW B (Content) ===
         Image bgImage = new ImageIcon("assets/main_background_1.png").getImage();
         ImagePanel rowBCenter = new ImagePanel(bgImage);
         rowBCenter.setLayout(new GridBagLayout());
         centerRows.add(rowBCenter);
-        
+
         GridBagConstraints rowBGbc = new GridBagConstraints();
         rowBGbc.fill = GridBagConstraints.HORIZONTAL;
         rowBGbc.gridx = 0;
         rowBGbc.anchor = GridBagConstraints.CENTER;
         rowBGbc.weightx = 1.0;
-        
-        // Add vertical padding
+        rowBGbc.weighty = 1.0;
+
+        // Row 0 [Vertical Padding]
         rowBGbc.gridy = 0;
-        rowBGbc.weighty = 0.0375; // 3.75% height
+        rowBGbc.weighty = 0.05;
         rowBCenter.add(Box.createVerticalStrut(1), rowBGbc);
-        
-        // Row 1 (Bakery name)
+
+        // Row 1 [Bakery Name]
         JPanel row1B = new JPanel(new BorderLayout());
         row1B.setOpaque(false);
-        
+
         Image staticButtonImage5 = new ImageIcon("assets/center_row2_rowA.png").getImage();
         StaticImageButton row1BButton = new StaticImageButton("Options", staticButtonImage5);
         row1BButton.setLayout(new GridBagLayout());
-        
+
         GridBagConstraints gbcName = new GridBagConstraints();
         gbcName.gridx = 0;
         gbcName.gridy = 0;
         gbcName.anchor = GridBagConstraints.CENTER;
         gbcName.insets = new Insets(9, 0, 0, 0);
-        
+
         JLabel bakeryNameLabel = new JLabel("Cookie Clicker's Bakery");
         bakeryNameLabel.setForeground(Color.WHITE);
         bakeryNameLabel.setFont(new Font("Garamond", Font.BOLD, 24));
         row1BButton.add(bakeryNameLabel, gbcName);
-        
+
         row1BButton.addActionListener(e -> {
             String input = JOptionPane.showInputDialog(
                 row1BButton,
@@ -1052,108 +1337,275 @@ public class Gamewindow extends JFrame {
                 }
             }
         });
-        
+
         row1B.add(row1BButton, BorderLayout.CENTER);
-        
+
         rowBGbc.gridy = 1;
-        rowBGbc.weighty = 0.075; // 7.5% height
+        rowBGbc.weighty = 0.1;
         rowBCenter.add(row1B, rowBGbc);
         secondRowPanels.add(row1B);
-        
-        // Row 2 (Cookie button)
-        JPanel row2B = new JPanel(new BorderLayout());
+
+        // === Row 2 [Cookie Button with spacers] ===
+        JPanel row2Container = new JPanel(new GridBagLayout());
+        row2Container.setOpaque(false);
+
+        // --- Left spacer (25%) ---
+        JPanel row2LeftSpacer = new JPanel();
+        row2LeftSpacer.setOpaque(false);
+        GridBagConstraints leftSpacerGbc = new GridBagConstraints();
+        leftSpacerGbc.gridx = 0;
+        leftSpacerGbc.gridy = 0;
+        leftSpacerGbc.weightx = 0.25;
+        leftSpacerGbc.fill = GridBagConstraints.BOTH;
+        row2Container.add(row2LeftSpacer, leftSpacerGbc);
+
+        // --- Center content (cookie button panel) ---
+        JPanel row2B = new JPanel(new GridBagLayout());
         row2B.setOpaque(false);
-        
+        row2B.setBorder(BorderFactory.createLineBorder(Color.RED)); // Debug visual
+
         Image img = new ImageIcon("assets/main_cookie_3.png").getImage();
         RotatingImageButton actionButtonrow2B = new RotatingImageButton(null, img);
-        
+
         actionButtonrow2B.addActionListener(e -> {
             gamestate.Click();
             updateDisplay();
-            
-            Point screenPoint = MouseInfo.getPointerInfo().getLocation();
-            Point framePoint = getLayeredPane().getLocationOnScreen();
-            int clickX = screenPoint.x - framePoint.x;
-            int clickY = screenPoint.y - framePoint.y;
-            
-            showFloatingText(clickX, clickY, "+" + NumberFormatter.formatNumber(gamestate.getClickingPower()));
+
+            // Get click position from the button's center
+            Point buttonCenter = actionButtonrow2B.getLocationOnScreen();
+            Point frameLocation = getLocationOnScreen();
+
+            int clickX = buttonCenter.x - frameLocation.x + (actionButtonrow2B.getWidth() / 2);
+            int clickY = buttonCenter.y - frameLocation.y + (actionButtonrow2B.getHeight() / 2);
+            clickX += (int)(Math.random() * 40 - 20);
+            clickY += (int)(Math.random() * 40 - 20);
+
+            String floatingText = "+" + NumberFormatter.formatNumber(gamestate.getClickingPower());
+            showFloatingTextOptimized(clickX, clickY, floatingText);
         });
-        
-        row2B.add(actionButtonrow2B, BorderLayout.CENTER);
-        
+
+        GridBagConstraints buttonGbc = new GridBagConstraints();
+        buttonGbc.gridx = 0;
+        buttonGbc.gridy = 0;
+        buttonGbc.weightx = 1;
+        buttonGbc.weighty = 1;
+        buttonGbc.fill = GridBagConstraints.BOTH;
+        row2B.add(actionButtonrow2B, buttonGbc);
+
+        GridBagConstraints centerGbc = new GridBagConstraints();
+        centerGbc.gridx = 1;
+        centerGbc.gridy = 0;
+        centerGbc.weightx = 0.5;
+        centerGbc.fill = GridBagConstraints.BOTH;
+        row2Container.add(row2B, centerGbc);
+
+        // --- Right spacer (25%) ---
+        JPanel row2RightSpacer = new JPanel();
+        row2RightSpacer.setOpaque(false);
+        GridBagConstraints rightSpacerGbc = new GridBagConstraints();
+        rightSpacerGbc.gridx = 2;
+        rightSpacerGbc.gridy = 0;
+        rightSpacerGbc.weightx = 0.25;
+        rightSpacerGbc.fill = GridBagConstraints.BOTH;
+        row2Container.add(row2RightSpacer, rightSpacerGbc);
+
+        // === Add full row2Container to parent ===
         rowBGbc.gridy = 2;
-        rowBGbc.weighty = 0.475; // 47.5% height
-        rowBCenter.add(row2B, rowBGbc);
-        secondRowPanels.add(row2B);
+        rowBGbc.weighty = 0.525;
+        rowBCenter.add(row2Container, rowBGbc);
+        secondRowPanels.add(row2Container);
+
+        // === Create a unified container for rows 3-5 with fixed width constraints ===
+        JPanel statsContainer = new JPanel(new GridBagLayout());
+        statsContainer.setOpaque(false);
+        //statsContainer.setBorder(BorderFactory.createLineBorder(Color.RED, 1, true)); // true = rounded, purely visual
+
+        GridBagConstraints statsMainGbc = new GridBagConstraints();
+        statsMainGbc.fill = GridBagConstraints.BOTH;
+        statsMainGbc.gridx = 0;
+        statsMainGbc.weightx = 1.0;
+
+        // === Row 3 (Cookie Number) ===
+        JPanel row3Container = new JPanel(new GridBagLayout());
+        row3Container.setOpaque(false);
         
-        // Row 3 (Cookie count)
-        ImagePanel row3B = new ImagePanel(new ImageIcon("assets/center_row2_rowC.png").getImage());
-        row3B.setLayout(new GridBagLayout());
-        
-        GridBagConstraints gbcBottom = new GridBagConstraints();
-        gbcBottom.gridx = 0;
-        gbcBottom.gridy = 0;
-        gbcBottom.weighty = 1.0;
-        gbcBottom.weightx = 1.0;
-        gbcBottom.insets = new Insets(16, 0, 0, 0);
-        gbcBottom.anchor = GridBagConstraints.SOUTH;
-        
+
+        GridBagConstraints row3Gbc = new GridBagConstraints();
+        row3Gbc.gridy = 0;
+        row3Gbc.weighty = 1.0;
+        row3Gbc.fill = GridBagConstraints.BOTH;
+
+        // Left spacer - FIXED WIDTH
+        JPanel row3LeftSpacer = new JPanel();
+        row3LeftSpacer.setOpaque(false);
+        row3Gbc.gridx = 0;
+        row3Gbc.weightx = 0.15;
+        row3Container.add(row3LeftSpacer, row3Gbc);
+
+        // Content panel - FIXED WIDTH with size constraints
+        ImagePanel row3Content = new ImagePanel(new ImageIcon("assets/center_row2_rowC.png").getImage());
+        row3Content.setLayout(new GridBagLayout());
+
+        // CRITICAL: Set explicit size constraints to prevent content-based resizing
+        row3Content.setMinimumSize(new Dimension(0, 0));
+        row3Content.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
+
+        // FIXED: Label constraints for visibility
+        GridBagConstraints row3LabelGbc = new GridBagConstraints();
+        row3LabelGbc.gridx = 0;
+        row3LabelGbc.gridy = 0;
+        row3LabelGbc.weighty = 1.0;
+        row3LabelGbc.weightx = 1.0;
+        row3LabelGbc.insets = new Insets(16, 0, 0, 0);
+        row3LabelGbc.anchor = GridBagConstraints.SOUTH;
+        row3LabelGbc.fill = GridBagConstraints.HORIZONTAL; // Allow horizontal expansion
+
         cookieCountLabel = new JLabel("0.0");
-        row3B.add(cookieCountLabel, gbcBottom);
-        
-        rowBGbc.gridy = 3;
-        rowBGbc.weighty = 0.075; // 7.5% height
-        rowBCenter.add(row3B, rowBGbc);
-        secondRowPanels.add(row3B);
-        
-        // Row 4 (Cookie unit)
-        ImagePanel row4B = new ImagePanel(new ImageIcon("assets/center_row2_rowD.png").getImage());
-        row4B.setLayout(new GridBagLayout());
-        
-        GridBagConstraints gbcTop1 = new GridBagConstraints();
-        gbcTop1.gridx = 0;
-        gbcTop1.gridy = 0;
-        gbcTop1.weighty = 1.0;
-        gbcTop1.weightx = 1.0;
-        gbcTop1.anchor = GridBagConstraints.NORTH;
-        
+        cookieCountLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        cookieCountLabel.setVerticalAlignment(SwingConstants.BOTTOM);
+        // FIXED: Don't restrict the label size - let it size naturally within constraints
+        row3Content.add(cookieCountLabel, row3LabelGbc);
+
+        row3Gbc.gridx = 1;
+        row3Gbc.weightx = 0.7;
+        row3Container.add(row3Content, row3Gbc);
+
+        // Right spacer - FIXED WIDTH
+        JPanel row3RightSpacer = new JPanel();
+        row3RightSpacer.setOpaque(false);
+        row3Gbc.gridx = 2;
+        row3Gbc.weightx = 0.15;
+        row3Container.add(row3RightSpacer, row3Gbc);
+
+        // Add to main stats container
+        statsMainGbc.gridy = 0;
+        statsMainGbc.weighty = 0.1;
+        statsContainer.add(row3Container, statsMainGbc);
+        secondRowPanels.add(row3Container);
+
+        // === Row 4 (Cookie Unit) ===
+        JPanel row4Container = new JPanel(new GridBagLayout());
+        row4Container.setOpaque(false);
+
+        GridBagConstraints row4Gbc = new GridBagConstraints();
+        row4Gbc.gridy = 0;
+        row4Gbc.weighty = 1.0;
+        row4Gbc.fill = GridBagConstraints.BOTH;
+
+        // Left spacer - IDENTICAL to row3
+        JPanel row4LeftSpacer = new JPanel();
+        row4LeftSpacer.setOpaque(false);
+        row4Gbc.gridx = 0;
+        row4Gbc.weightx = 0.15;
+        row4Container.add(row4LeftSpacer, row4Gbc);
+
+        // Content panel - IDENTICAL constraints to row3
+        ImagePanel row4Content = new ImagePanel(new ImageIcon("assets/center_row2_rowD.png").getImage());
+        row4Content.setLayout(new GridBagLayout());
+
+        // CRITICAL: Same size constraints as row3
+        row4Content.setMinimumSize(new Dimension(0, 0));
+        row4Content.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
+
+        // FIXED: Label constraints for visibility
+        GridBagConstraints row4LabelGbc = new GridBagConstraints();
+        row4LabelGbc.gridx = 0;
+        row4LabelGbc.gridy = 0;
+        row4LabelGbc.weighty = 1.0;
+        row4LabelGbc.weightx = 1.0;
+        row4LabelGbc.anchor = GridBagConstraints.NORTH;
+        row4LabelGbc.fill = GridBagConstraints.HORIZONTAL; // Allow horizontal expansion
+
         cookieUnitLabel = new JLabel("Cookies");
-        row4B.add(cookieUnitLabel, gbcTop1);
-        
-        rowBGbc.gridy = 4;
-        rowBGbc.weighty = 0.075; // 7.5% height
-        rowBCenter.add(row4B, rowBGbc);
-        secondRowPanels.add(row4B);
-        
-        // Row 5 (CPS)
-        ImagePanel row5B = new ImagePanel(new ImageIcon("assets/center_row2_rowE.png").getImage());
-        row5B.setLayout(new GridBagLayout());
-        
-        GridBagConstraints gbcTop = new GridBagConstraints();
-        gbcTop.gridx = 0;
-        gbcTop.gridy = 0;
-        gbcTop.weighty = 1.0;
-        gbcTop.weightx = 1.0;
-        gbcTop.insets = new Insets(0, 0, 20, 0);
-        gbcTop.anchor = GridBagConstraints.NORTH;
-        
+        cookieUnitLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        cookieUnitLabel.setVerticalAlignment(SwingConstants.TOP);
+        // FIXED: Don't restrict the label size
+        row4Content.add(cookieUnitLabel, row4LabelGbc);
+
+        row4Gbc.gridx = 1;
+        row4Gbc.weightx = 0.7; // IDENTICAL to row3
+        row4Container.add(row4Content, row4Gbc);
+
+        // Right spacer - IDENTICAL to row3
+        JPanel row4RightSpacer = new JPanel();
+        row4RightSpacer.setOpaque(false);
+        row4Gbc.gridx = 2;
+        row4Gbc.weightx = 0.15;
+        row4Container.add(row4RightSpacer, row4Gbc);
+
+        // Add to main stats container
+        statsMainGbc.gridy = 1;
+        statsMainGbc.weighty = 0.1;
+        statsContainer.add(row4Container, statsMainGbc);
+        secondRowPanels.add(row4Container);
+
+        // === Row 5 (CPS) ===
+        JPanel row5Container = new JPanel(new GridBagLayout());
+        row5Container.setOpaque(false);
+
+        GridBagConstraints row5Gbc = new GridBagConstraints();
+        row5Gbc.gridy = 0;
+        row5Gbc.weighty = 1.0;
+        row5Gbc.fill = GridBagConstraints.BOTH;
+
+        // Left spacer - IDENTICAL to row3 and row4
+        JPanel row5LeftSpacer = new JPanel();
+        row5LeftSpacer.setOpaque(false);
+        row5Gbc.gridx = 0;
+        row5Gbc.weightx = 0.15;
+        row5Container.add(row5LeftSpacer, row5Gbc);
+
+        // Content panel - IDENTICAL constraints to row3 and row4
+        ImagePanel row5Content = new ImagePanel(new ImageIcon("assets/center_row2_rowE.png").getImage());
+        row5Content.setLayout(new GridBagLayout());
+
+        // CRITICAL: Same size constraints as row3 and row4
+        row5Content.setMinimumSize(new Dimension(0, 0));
+        row5Content.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
+
+        // FIXED: Label constraints for visibility
+        GridBagConstraints row5LabelGbc = new GridBagConstraints();
+        row5LabelGbc.gridx = 0;
+        row5LabelGbc.gridy = 0;
+        row5LabelGbc.weighty = 1.0;
+        row5LabelGbc.weightx = 1.0;
+        row5LabelGbc.insets = new Insets(0, 0, 20, 0);
+        row5LabelGbc.anchor = GridBagConstraints.NORTH;
+        row5LabelGbc.fill = GridBagConstraints.HORIZONTAL; // Allow horizontal expansion
+
         cpsLabel = new JLabel("0.0 per second");
-        row5B.add(cpsLabel, gbcTop);
-        
-        rowBGbc.gridy = 5;
-        rowBGbc.weighty = 0.075; // 7.5% height
-        rowBCenter.add(row5B, rowBGbc);
-        secondRowPanels.add(row5B);
-        
+        cpsLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        cpsLabel.setVerticalAlignment(SwingConstants.TOP);
+        // FIXED: Don't restrict the label size
+        row5Content.add(cpsLabel, row5LabelGbc);
+
+        row5Gbc.gridx = 1;
+        row5Gbc.weightx = 0.7; // IDENTICAL to row3 and row4
+        row5Container.add(row5Content, row5Gbc);
+
+        // Right spacer - IDENTICAL to row3 and row4
+        JPanel row5RightSpacer = new JPanel();
+        row5RightSpacer.setOpaque(false);
+        row5Gbc.gridx = 2;
+        row5Gbc.weightx = 0.15;
+        row5Container.add(row5RightSpacer, row5Gbc);
+
+        // Add to main stats container
+        statsMainGbc.gridy = 2;
+        statsMainGbc.weighty = 0.075;
+        statsContainer.add(row5Container, statsMainGbc);
+        secondRowPanels.add(row5Container);
+
+        // === Add the unified stats container to the main layout ===
+        rowBGbc.gridy = 3;
+        rowBGbc.weighty = 0.275; // Total: 0.1 + 0.1 + 0.075
+        rowBGbc.fill = GridBagConstraints.HORIZONTAL;
+        rowBCenter.add(statsContainer, rowBGbc);
+
         // Add vertical padding
-        rowBGbc.gridy = 6;
-        rowBGbc.weighty = 0.0375; // 3.75% height
+        rowBGbc.gridy = 4;
+        rowBGbc.weighty = 0.05; // 5% height
         rowBCenter.add(Box.createVerticalStrut(1), rowBGbc);
-        
-        // Add vertical glue to absorb extra space
-        rowBGbc.gridy = 7;
-        rowBGbc.weighty = 0.15; // 15% height
-        rowBCenter.add(Box.createVerticalGlue(), rowBGbc);
         
         gbc.gridy = 1;
         gbc.weighty = 0.85; // 85% height
@@ -1184,10 +1636,20 @@ public class Gamewindow extends JFrame {
                 
                 // Calculate sizes for Row B elements
                 int rowBWidth = (int)(panelWidth * 0.6625);
+                System.out.println("rowBWidth: " + rowBWidth);
+                System.out.println("panelWidth: " + panelWidth);
+                System.out.println("panelHeight: " + panelHeight);
                 
                 // Update Row B elements
                 row1BButton.setPreferredSize(new Dimension(rowBWidth, (int)(panelHeight * 0.075)));
-                actionButtonrow2B.setPreferredSize(new Dimension((int)(rowBWidth * 0.9), (int)(rowBHeight * 0.475 * 0.9)));
+                actionButtonrow2B.setPreferredSize(new Dimension((int)(rowBWidth * 0.5), (int)(rowBHeight * 0.525)));
+                actionButtonrow2B.setMaximumSize(new Dimension((int)(rowBWidth * 0.5), (int)(rowBHeight * 0.525)));
+                actionButtonrow2B.setMinimumSize(new Dimension((int)(rowBWidth * 0.5), (int)(rowBHeight * 0.525)));
+
+                System.out.println("actionButtonrow2B Preferred size: " + actionButtonrow2B.getPreferredSize());
+                System.out.println("actionButtonrow2B Maximum size:   " + actionButtonrow2B.getMaximumSize());
+                System.out.println("actionButtonrow2B Minimum size:   " + actionButtonrow2B.getMinimumSize());
+                System.out.println("actionButtonrow2B Actual size:    " + actionButtonrow2B.getSize());
                 
                 // Update fonts
                 int baseFontSize = (int)(panelHeight * 0.030);
@@ -1218,12 +1680,45 @@ public class Gamewindow extends JFrame {
                 
                 centerPanel.revalidate();
                 centerPanel.repaint();
+
+                // Force consistent widths for stats rows regardless of content
+                SwingUtilities.invokeLater(() -> {
+                    // Get the actual width that should be used for all content panels
+                    int statsContainerWidth = statsContainer.getWidth();
+                    int contentWidth = (int)(statsContainerWidth * 0.7);
+                    int spacerWidth = (int)(statsContainerWidth * 0.15);
+                    
+                    Dimension contentSize = new Dimension(contentWidth, row3Content.getHeight());
+                    Dimension spacerSize = new Dimension(spacerWidth, row3Content.getHeight());
+                    
+                    // Row 3
+                    row3Content.setPreferredSize(contentSize);
+                    row3Content.setMinimumSize(contentSize);
+                    row3Content.setMaximumSize(contentSize);
+                    row3LeftSpacer.setPreferredSize(spacerSize);
+                    row3RightSpacer.setPreferredSize(spacerSize);
+                    
+                    // Row 4
+                    row4Content.setPreferredSize(contentSize);
+                    row4Content.setMinimumSize(contentSize);
+                    row4Content.setMaximumSize(contentSize);
+                    row4LeftSpacer.setPreferredSize(spacerSize);
+                    row4RightSpacer.setPreferredSize(spacerSize);
+                    
+                    // Row 5
+                    row5Content.setPreferredSize(contentSize);
+                    row5Content.setMinimumSize(contentSize);
+                    row5Content.setMaximumSize(contentSize);
+                    row5LeftSpacer.setPreferredSize(spacerSize);
+                    row5RightSpacer.setPreferredSize(spacerSize);
+                    
+                    statsContainer.revalidate();
+                    statsContainer.repaint();
+                });
             }
         });
         
         return centerPanel;
-
-        
     }
 
    private JPanel createEastPanel() {
@@ -1451,12 +1946,13 @@ public class Gamewindow extends JFrame {
                 
                 // Update upgrade button dimensions for row2C (rowDEast)
                 upgradeButtonWidth = (int) (eastWidth - 18);
-                upgradeButtonHeight = (int)(row2Height * 0.14);
+                upgradeButtonHeight = (int) (row2Height * 0.14);
                 
                 // Resize upgrade wrappers
                 for (JPanel wrapper : upgradeWrappers) {
-                    wrapper.setPreferredSize(new Dimension(eastWidth - 18, upgradeButtonHeight));
-                    wrapper.setMinimumSize(new Dimension(eastWidth - 18, upgradeButtonHeight));
+                    wrapper.setPreferredSize(new Dimension(upgradeButtonWidth, upgradeButtonHeight));
+                    wrapper.setMinimumSize(new Dimension(upgradeButtonWidth, upgradeButtonHeight));
+                    wrapper.setMaximumSize(new Dimension(upgradeButtonWidth, upgradeButtonHeight));
                 }
                 
                 eastPanel.revalidate();
@@ -1472,41 +1968,30 @@ public class Gamewindow extends JFrame {
         upgrades.add(upgrade);
         upgradePastStage1.add(false); // Initialize as not past Stage 1
 
-        // Create a custom panel for the upgrade
-        UpgradePanel upgradePanel = new UpgradePanel(upgrade);
-        upgradePanels.add(upgradePanel);
-        
-        // Create a button for the upgrade
-        JButton upgradeBtn = new JButton();
-        upgradeBtn.setContentAreaFilled(false);
-        upgradeBtn.setBorderPainted(false);
-        upgradeBtn.setLayout(new BorderLayout());
-        upgradeBtn.add(upgradePanel, BorderLayout.CENTER);
-        
-        upgradeButtons.add(upgradeBtn);
+        // Create a custom button for the upgrade
+        UpgradeButton upgradeBtn = new UpgradeButton(upgrade, upgrades.size() - 1);
+        upgradePanels.add(upgradeBtn);
+        upgradeButtons.add(upgradeBtn); // Add to the upgradeButtons list as well
 
         // Set initial size for the button
         upgradeBtn.setPreferredSize(new Dimension(upgradeButtonWidth, upgradeButtonHeight));
         upgradeBtn.setMinimumSize(new Dimension(upgradeButtonWidth, upgradeButtonHeight));
         upgradeBtn.setMaximumSize(new Dimension(upgradeButtonWidth, upgradeButtonHeight));
-
-        // Set initial background color
-        upgradePanel.setBackground(STAGE1_BG);
         
         // Add action listener to the button
         upgradeBtn.addActionListener(e -> {
             if (gamestate.Transact(upgrade, Global.getQuantity(), Global.getMode())) {
                 // Update to stage 3 after purchase
-                upgradePanel.updateStage(3, gamestate.getAmount());
-                upgradePanel.setBackground(STAGE3_BG);
+                upgradeBtn.updateStage(3, gamestate.getAmount());
                 updateDisplay();
             }
         });
 
-        // Create a wrapper panel for the upgrade button
-        JPanel wrapper = new JPanel(new BorderLayout());
+        // Create a wrapper panel for the upgrade button with no gaps
+        JPanel wrapper = new JPanel(new BorderLayout(0, 0)); // Zero horizontal and vertical gaps
         wrapper.setOpaque(false);
-        wrapper.add(upgradeBtn);
+        wrapper.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0)); // No border
+        wrapper.add(upgradeBtn, BorderLayout.CENTER);
         
         // Initially hide the upgrade
         wrapper.setVisible(false);
@@ -1528,7 +2013,7 @@ public class Gamewindow extends JFrame {
         
         Upgrade upgrade = upgrades.get(index);
         JPanel wrapper = upgradeWrappers.get(index);
-        UpgradePanel upgradePanel = upgradePanels.get(index);
+        UpgradeButton upgradeBtn = upgradePanels.get(index);
         
         double cost = upgrade.getCost(Global.getQuantity());
         
@@ -1549,7 +2034,7 @@ public class Gamewindow extends JFrame {
         
         // If this is the first upgrade or the previous one is visible
         boolean shouldBeVisible = (index == 0) || 
-                         (index > 0 && upgradeWrappers.get(index-1).isVisible());
+                        (index > 0 && upgradeWrappers.get(index-1).isVisible());
         
         // Only show if it should be visible and we haven't exceeded the Stage 1 limit
         // or if this upgrade has already passed Stage 1
@@ -1558,33 +2043,28 @@ public class Gamewindow extends JFrame {
             
             // If this upgrade hasn't passed Stage 1 yet
             if (!upgradePastStage1.get(index)) {
-                // Stage 1: First reveal
-                upgradeButtons.get(index).setEnabled(false);
-                upgradePanel.setBackground(STAGE1_BG); // Dark gray
-                upgradePanel.updateStage(1, cookieCount); // Show ??? for name
+                // Stage 1: First reveal with 85% transparency overlay
+                upgradeBtn.setEnabled(false);
+                upgradeBtn.updateStage(1, cookieCount); // Show ??? for name with 85% overlay
             } 
             // If this upgrade has passed Stage 1
             else {
                 if (Global.getMode().equals("SELL")) {
                     if (upgrade.getOwned() >= Global.getQuantity()) {
-                        upgradeButtons.get(index).setEnabled(true);
-                        upgradePanel.setBackground(STAGE3_BG); // Selling is available
-                        upgradePanel.updateStage(3, cookieCount); // Show real name, maybe different label?
+                        upgradeBtn.setEnabled(true);
+                        upgradeBtn.updateStage(3, cookieCount); // No overlay
                     } else {
-                        upgradeButtons.get(index).setEnabled(false);
-                        upgradePanel.setBackground(STAGE2_BG); // Still gray
-                        upgradePanel.updateStage(2, cookieCount); // Show real name
+                        upgradeBtn.setEnabled(false);
+                        upgradeBtn.updateStage(2, cookieCount); // 35% overlay
                     }
                 } else {
                     // BUY mode logic
                     if (cookieCount >= cost) {
-                        upgradeButtons.get(index).setEnabled(true);
-                        upgradePanel.setBackground(STAGE3_BG); // Original color
-                        upgradePanel.updateStage(3, cookieCount); // Show real name with green cost
+                        upgradeBtn.setEnabled(true);
+                        upgradeBtn.updateStage(3, cookieCount); // No overlay
                     } else {
-                        upgradeButtons.get(index).setEnabled(false);
-                        upgradePanel.setBackground(STAGE2_BG); // Lighter gray
-                        upgradePanel.updateStage(2, cookieCount); // Show real name with red cost
+                        upgradeBtn.setEnabled(false);
+                        upgradeBtn.updateStage(2, cookieCount); // 35% overlay
                     }
                 }
             }
@@ -1602,9 +2082,8 @@ public class Gamewindow extends JFrame {
             
             if (!upgradeWrappers.get(index + 1).isVisible() && currentStage1Count < 2) {
                 upgradeWrappers.get(index + 1).setVisible(true);
-                upgradeButtons.get(index + 1).setEnabled(false);
-                upgradePanels.get(index + 1).setBackground(STAGE1_BG);
-                upgradePanels.get(index + 1).updateStage(1, cookieCount);
+                upgradePanels.get(index + 1).setEnabled(false);
+                upgradePanels.get(index + 1).updateStage(1, cookieCount); // 85% overlay
                 // Debug output
                 System.out.println("Showing next upgrade: " + upgrades.get(index + 1).getName() + " in Stage 1");
             }
@@ -1636,42 +2115,86 @@ public class Gamewindow extends JFrame {
         }
     }
 
-    private class FloatingLabel {
-        JLabel label;
+    // OPTIMIZED: Enhanced FloatingText class with better performance
+    public class FloatingText {
+        String text;
+        double x, y; // Use double for smoother movement
+        double vx, vy; // Velocity components
         int lifetime = 0;
-        int maxLifetime = 60;
+        int maxLifetime = 90; // 3 seconds at 30fps
+        double scale = 1.0;
 
-        public FloatingLabel(JLabel label) {
-            this.label = label;
+        public FloatingText(String text, int startX, int startY) {
+            this.text = text;
+            this.x = startX;
+            this.y = startY;
+            
+            // Add slight random velocity like original Cookie Clicker
+            this.vx = (Math.random() - 0.5) * 2; // Random horizontal drift
+            this.vy = -2.5 - Math.random() * 1.5; // Upward movement with variation
+            
+            // Start slightly larger then shrink (like original)
+            this.scale = 1.2;
         }
 
         public boolean update() {
-            int dy = 3;
-            float opacity = 1.0f - (lifetime / (float) maxLifetime);
-            label.setLocation(label.getX(), label.getY() - dy);
-            label.setForeground(new Color(255, 255, 255, Math.max(0, (int) (255 * opacity))));
+            // Update position with velocity
+            x += vx;
+            y += vy;
+            
+            // Slow down horizontal movement over time
+            vx *= 0.98;
+            
+            // Gravity effect (slow down upward movement)
+            vy += 0.05;
+            
+            // Scale animation (shrink over time like original)
+            if (lifetime < 20) {
+                scale = 1.2 - (lifetime * 0.01); // Shrink from 1.2 to 1.0
+            } else {
+                scale = Math.max(0.1, 1.0 - ((lifetime - 20) * 0.015)); // Continue shrinking
+            }
+            
             lifetime++;
             return lifetime >= maxLifetime;
         }
+
+        // OPTIMIZED: Use pre-calculated alpha composites
+        public void drawOptimized(Graphics2D g2d, AlphaComposite[] alphaComposites) {
+            if (lifetime >= alphaComposites.length) return;
+            
+            // Save original transform
+            AffineTransform originalTransform = g2d.getTransform();
+            
+            // Apply scale and position
+            g2d.translate(x, y);
+            g2d.scale(scale, scale);
+            
+            // Apply alpha
+            g2d.setComposite(alphaComposites[Math.min(lifetime, alphaComposites.length - 1)]);
+            
+            // Draw text centered
+            FontMetrics fm = g2d.getFontMetrics();
+            int textWidth = fm.stringWidth(text);
+            int textHeight = fm.getHeight();
+            
+            g2d.drawString(text, -textWidth / 2, textHeight / 4);
+            
+            // Restore transform and composite
+            g2d.setTransform(originalTransform);
+            g2d.setComposite(AlphaComposite.SrcOver);
+        }
     }
 
-    private void showFloatingText(int x, int y, String text) {
-        int frameHeight = getHeight();
+    // OPTIMIZED: Simplified floating text creation (like original Cookie Clicker)
+    private void showFloatingTextOptimized(int x, int y, String text) {
+        // Simple limit check - remove oldest if too many
+        if (floatingTexts.size() >= MAX_FLOATING_TEXTS) {
+            floatingTexts.remove(0); // Remove oldest
+        }
         
-        // Calculate font size as a percentage of the frame height
-        int baseFontSize = (int) (frameHeight * 0.03);  // Adjust this percentage as needed
+        floatingTexts.add(new FloatingText(text, x, y));
         
-        // Create label and set properties
-        JLabel label = new JLabel(text);
-        label.setFont(new Font("Garamond", Font.BOLD, baseFontSize));  // Use dynamically calculated font size
-        label.setForeground(new Color(255, 255, 255));
-        label.setSize(label.getPreferredSize());
-        label.setLocation(x, y);
-        label.setOpaque(false);
-        label.setBorder(null);
-        
-        // Add label to layered pane
-        getLayeredPane().add(label, JLayeredPane.POPUP_LAYER);
-        floatingLabels.add(new FloatingLabel(label));
+        System.out.println("[DEBUG] Added floating text: " + text + " at (" + x + ", " + y + ") - Total: " + floatingTexts.size());
     }
 }

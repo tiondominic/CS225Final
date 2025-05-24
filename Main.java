@@ -2,11 +2,10 @@ public class Main {
     public double counter = 0;
     public Gamestate gamestate;
     public static void main(String[] args) {
-        Gamestate gamestate = new Gamestate(100000000000000L); 
-        GoldenCookieCheck GCheck = new GoldenCookieCheck(gamestate);
-        GameTick gameTick = new GameTick(gamestate, GCheck);
-
+        Gamestate gamestate = new Gamestate(100000);
         Gamewindow mainwindow = new Gamewindow(gamestate);
+        GoldenCookieCheck GCheck = new GoldenCookieCheck(gamestate, mainwindow);
+        GameTick gameTick = new GameTick(gamestate, GCheck);
         
         // Add upgrades to the UI
         Upgrade cursor = new Upgrade("Cursor", 15, 0.1, gamestate, false);

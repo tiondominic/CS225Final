@@ -4,10 +4,12 @@ import java.awt.Frame; // Add this import for Frame.getFrames()
 
 public class GoldenCookieCheck {
     private final Gamestate gamestate;
+    private final Gamewindow gameWindow;
     private long lastUpdateTime; // Track the last update time
     
-    public GoldenCookieCheck(Gamestate gamestate){
+    public GoldenCookieCheck(Gamestate gamestate, Gamewindow gameWindow){
         this.gamestate = gamestate;
+        this.gameWindow = gameWindow;
         this.lastUpdateTime = System.currentTimeMillis();
         
         // Initialize with a proper threshold on creation
@@ -42,17 +44,11 @@ public class GoldenCookieCheck {
                 Global.setGCbool(true);
 
                 // Check if any JFrame is minimized
-                boolean anyMinimized = false;
-                for (Frame frame : Frame.getFrames()) {
-                    if (frame instanceof JFrame && frame.isVisible() && 
-                        ((JFrame)frame).getState() == JFrame.ICONIFIED) {
-                        anyMinimized = true;
-                        break;
-                    }
-                }
+                boolean isMinimized = !gameWindow.isVisible() || 
+                      (gameWindow.getExtendedState() & JFrame.ICONIFIED) != 0;
 
                 // Only spawn if no window is minimized
-                if (!anyMinimized) {
+                if (!isMinimized) {
                     // Create ChaosElements with just the gamestate
                     ChaosElements chaos = new ChaosElements(gamestate);
                     chaos.setUp();
