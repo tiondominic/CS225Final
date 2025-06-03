@@ -40,15 +40,8 @@ public class DecoyChaosElements {
 
             // IMPORTANT: Uses the same golden cookie image to look identical
             decoyGoldenCookieButton = new PopupCookieButton("assets/goldencookie.png", () -> {
-                // Calculate amount to deduct (10% to 25% of current cookies)
-                double deductionPercentage = 0.1 + (Math.random() * 0.15); // 10% to 25%
-                double deductionAmount = gamestate.getAmount() * deductionPercentage;
-                
-                // Minimum deduction of 100 cookies, maximum of current amount
-                deductionAmount = Math.max(100, Math.min(deductionAmount, gamestate.getAmount()));
-                
+                double deductionAmount = Math.random() * (gamestate.getAmount() / 2);
                 gamestate.decoyClick(deductionAmount);
-                gamestate.goldenClick(deductionAmount);
                 String decoyText = "-" + (int) deductionAmount + " Cookies!";
                 FloatingTextLabel floatLabel = new FloatingTextLabel(decoyText, Color.RED, 1400);
                 floatLabel.setBounds(0, 0, frame.getWidth(), frame.getHeight());

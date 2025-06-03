@@ -764,7 +764,7 @@ public class Gamewindow extends JFrame {
         setTitle("Cookie Clicker Layout - Colored");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        // OPTIMIZED: Pre-calculate alpha composites
+        // Pre-calculate alpha composites
         initializeAlphaComposites();
 
         // Set size to 75% width and 75% height of the screen, and center it
@@ -777,7 +777,7 @@ public class Gamewindow extends JFrame {
         int height = (int) (modifiedheight * 0.75);
 
         setSize(width, height);
-        setLocationRelativeTo(null); // Centers the window
+        setLocationRelativeTo(null);
         setExtendedState(JFrame.MAXIMIZED_BOTH);
 
         System.out.println("[DEBUG] MINIMIZED WINDOW DIMENSIONS: " + width + "x" + height);
@@ -785,9 +785,9 @@ public class Gamewindow extends JFrame {
         // Use BorderLayout for the main frame
         setLayout(new BorderLayout());
 
-        int westPanelWidth = (int) (width * 0.25);  // 25% of frame width
-        int centerPanelWidth = (int) (width * 0.5); // e.g. 45% of frame width (adjust as needed)
-        int eastPanelWidth = (int) (width * 0.25);  // 25% of frame width
+        int westPanelWidth = (int) (width * 0.25);
+        int centerPanelWidth = (int) (width * 0.5);
+        int eastPanelWidth = (int) (width * 0.25);
 
         // Create the three main panels with GridBagLayout
         JPanel westPanel = createWestPanel();
@@ -818,7 +818,7 @@ public class Gamewindow extends JFrame {
         uiUpdateTimer = new Timer(16, e -> updateDisplay());
         uiUpdateTimer.start();
 
-        // OPTIMIZED: Reduce timer frequency to 30fps for floating text
+        // Reduce timer frequency to 30fps for floating text
         Timer floatingLabelTimer = new Timer(33, e -> {
             updateFloatingTexts();
             if (glassPane != null) {
@@ -829,7 +829,6 @@ public class Gamewindow extends JFrame {
 
         setVisible(true);
 
-        // OPTION 2: Set up glass pane for floating text after setVisible(true)
         setupGlassPane();
 
         // After visible: dynamically size the side panels
@@ -967,7 +966,6 @@ public class Gamewindow extends JFrame {
         gbc.gridx = 0;
         gbc.weightx = 1.0;
         
-
         // === Row 1 (15% of West Panel Height) ===
         Image row1Image = new ImageIcon("assets/west_row1.png").getImage();
         ImagePanel westRow1 = new ImagePanel(row1Image);
@@ -1240,7 +1238,23 @@ public class Gamewindow extends JFrame {
 
         Image staticButtonImage2 = new ImageIcon("assets/center_row1_columnA2.png").getImage();
         StaticImageButton column1AButton2 = new StaticImageButton("Options", staticButtonImage2);
-        column1AButton2.addActionListener(e -> System.out.println("Button 2 clicked"));
+
+        // DEBUG: Bind decoy golden cookie to this button
+        column1AButton2.addActionListener(e -> {
+            System.out.println("[DEBUG] Spawning golden cookie instantly...");
+            
+            // Create and immediately show a decoy golden cookie
+            ChaosElements debugChao = new ChaosElements(gamestate);
+            debugChao.setUp();
+            
+            // Optional: Auto-close after 15 seconds like the normal system
+            Timer debugTimer = new Timer(15000, closeEvent -> {
+                debugChao.exit();
+                System.out.println("[DEBUG] Debug golden cookie auto-closed after 15 seconds");
+            });
+            debugTimer.setRepeats(false);
+            debugTimer.start();
+        });
         firstRowButtons.add(column1AButton2);
 
         JPanel button2Wrapper = new JPanel(new BorderLayout());
@@ -1738,7 +1752,7 @@ public class Gamewindow extends JFrame {
         return centerPanel;
     }
 
-   private JPanel createEastPanel() {
+    private JPanel createEastPanel() {
         // Create the east panel with GridBagLayout
         JPanel eastPanel = new JPanel(new GridBagLayout());
         eastPanel.setBackground(new Color(0xFFFFFF));

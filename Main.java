@@ -2,7 +2,7 @@ public class Main {
     public double counter = 0;
     public Gamestate gamestate;
     public static void main(String[] args) {
-        Gamestate gamestate = new Gamestate(100000);
+        Gamestate gamestate = new Gamestate(0);
         Gamewindow mainwindow = new Gamewindow(gamestate);
         GoldenCookieCheck GCheck = new GoldenCookieCheck(gamestate, mainwindow);
         DecoyGoldenCookieCheck DGCheck = new DecoyGoldenCookieCheck(gamestate, mainwindow);
