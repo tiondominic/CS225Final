@@ -10,6 +10,11 @@ public class PopupCookieButton extends JButton {
     private boolean showing = false;
     private final Runnable onClickAction;
     private Timer fadeOutTimer;
+    private Timer idleAnimationTimer;
+
+    private float idleAngle = 0f;
+    private float idleScaleOffset = 0f;
+    private long idleStartTime;
 
     private static final int ANIMATION_DELAY = 16;
     private static final int ANIMATION_DURATION = 800;
@@ -29,6 +34,20 @@ public class PopupCookieButton extends JButton {
                 onClickAction.run();
             }
         });
+
+        // Idle animation
+        idleStartTime = System.currentTimeMillis();
+        idleAnimationTimer = new Timer(ANIMATION_DELAY, e -> {
+            long time = System.currentTimeMillis() - idleStartTime;
+            double radians = (time % 2000) / 2000.0 * 2 * Math.PI;
+
+            // Oscillate rotation ±3 degrees and scale ±2.5%
+            idleAngle = (float) Math.sin(radians) * 3f;
+            idleScaleOffset = (float) (Math.sin(radians * 2) * 0.025f);
+
+            if (showing) repaint();
+        });
+        idleAnimationTimer.start();
     }
 
     public void showWithAnimation() {
@@ -105,12 +124,19 @@ public class PopupCookieButton extends JButton {
         int panelW = getWidth();
         int panelH = getHeight();
 
-        int drawW = (int) (panelW * scale);
-        int drawH = (int) (panelH * scale);
+        float totalScale = scale + idleScaleOffset;
+        int drawW = (int) (panelW * totalScale);
+        int drawH = (int) (panelH * totalScale);
         int drawX = (panelW - drawW) / 2;
         int drawY = (panelH - drawH) / 2;
 
         g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, opacity));
+
+        // Apply rotation around center
+        g2d.translate(panelW / 2, panelH / 2);
+        g2d.rotate(Math.toRadians(idleAngle));
+        g2d.translate(-panelW / 2, -panelH / 2);
+
         g2d.drawImage(image, drawX, drawY, drawW, drawH, this);
         g2d.dispose();
     }

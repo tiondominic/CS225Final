@@ -778,7 +778,7 @@ public class Gamewindow extends JFrame {
 
         setSize(width, height);
         setLocationRelativeTo(null);
-        setExtendedState(JFrame.MAXIMIZED_BOTH);
+        
 
         System.out.println("[DEBUG] MINIMIZED WINDOW DIMENSIONS: " + width + "x" + height);
 
